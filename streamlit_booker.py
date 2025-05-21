@@ -216,15 +216,15 @@ if st.button("Search", type="primary"):
     # If hotel location is non-empty, run the full booking search
     if location:
         with st.spinner("Bear with me ...", show_time=True):
-            result_df, statuses = run_async_in_thread(booker.booking_search)
+            result_df = run_async_in_thread(booker.booking_search)
         st.success("Search complete!")
-        st.write(statuses)
+        st.write(result_df[1])
 
         column_config = {
             "hotel_link": st.column_config.LinkColumn("hotel_link", display_text="Hotel Link"),
             "flight_link": st.column_config.LinkColumn("flight_link", display_text="Flight Link")
         }
-        st.dataframe(result_df, column_config=column_config, hide_index=True)
+        st.dataframe(result_df[0], column_config=column_config, hide_index=True)
 
         excel = convert_df(result_df)
         st.download_button("Download Results", data=excel, file_name="search_results.xlsx", type="primary")

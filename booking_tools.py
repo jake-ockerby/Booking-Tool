@@ -441,4 +441,4 @@ class Booker:
                                                    'vm_score', 'hotel_link', 'flight_link']].copy()
 
         # Return final results
-        return all_best_hotels, statuses
+        return tuple([all_best_hotels, statuses])
