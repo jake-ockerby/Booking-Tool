@@ -126,7 +126,7 @@ class Booker:
                 checkout_new = checkout_new_date.strftime("%Y-%m-%d")
     
                 # Create url
-                base_url = "https://www.booking.com/searchresults.en-gb.html"
+                base_url = "https://www.booking.com/searchresults.en-us.html"
                 query = {
                     "ss": self.location,
                     "checkin": checkin_new,
