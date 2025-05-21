@@ -202,8 +202,11 @@ class Booker:
             browser = await p.chromium.launch(headless=True)
             context = await browser.new_context()
             page = await context.new_page()
-            await page.goto(url, timeout=60000)
-            text = await page.inner_text('body')
+            try:
+                await page.goto(url, timeout=60000)
+                text = await page.inner_text('body')
+            except:
+                text = 'Failed'
         #     await page.wait_for_selector('[data-testid="property-card"]', timeout=10000)
     
         #     hotels = await page.query_selector_all('[data-testid="property-card"]')
