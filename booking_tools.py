@@ -1,5 +1,6 @@
 # Code Author: Jake Ockerby
 
+import streamlit as st
 import asyncio
 import nest_asyncio
 import aiohttp
@@ -61,7 +62,7 @@ class Booker:
         async with semaphore:
             try:
                 async with session.get(url, timeout=10) as response:
-                    print(response.status)
+                    st.write(response.status)
                     return await response.text()
             except Exception as e:
                 print(f"Error fetching {url}: {e}")
