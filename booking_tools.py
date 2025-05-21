@@ -239,7 +239,7 @@ class Booker:
         #         except:
         #             continue
                 
-        #     await browser.close()
+            await browser.close()
 
         # # Convert dictionary to dataframe and return
         # hotels_df = pd.DataFrame(hotels_data)
