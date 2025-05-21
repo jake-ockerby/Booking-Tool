@@ -370,9 +370,8 @@ class Booker:
                 batch_urls = urls[i:i+batch_size]
                 batch_dates = dates[i:i+batch_size]
                 
-                # tasks = [self.fetch(session, url) for url in batch_urls]
-                statuses = [self.fetch(session, url) for url in batch_urls]
-        #         html_pages = await asyncio.gather(*tasks)
+                tasks = [self.fetch(session, url) for url in batch_urls]
+                html_pages = await asyncio.gather(*tasks)
         
         #         tasks = [self.extract_hotels_from_page(html, date) for html, date in zip(html_pages, batch_dates)]
         #         batch_results = await asyncio.gather(*tasks)
@@ -443,4 +442,4 @@ class Booker:
         #                                            'vm_score', 'hotel_link', 'flight_link']].copy()
 
         # Return final results
-        return statuses
+        return html_pages
