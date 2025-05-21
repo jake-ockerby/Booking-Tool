@@ -61,7 +61,7 @@ class Booker:
         async with semaphore:
             # try:
                 async with session.get(url, timeout=10) as response:
-                    return response.status
+                    return response.text
             # except Exception as e:
             #     print(f"Error fetching {url}: {e}")
             #     return None
