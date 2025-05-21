@@ -59,12 +59,12 @@ class Booker:
     # Asynchronous fetch
     async def fetch(self, session, url):
         async with semaphore:
-            try:
+            # try:
                 async with session.get(url, timeout=10) as response:
                     return await response.status
-            except Exception as e:
-                print(f"Error fetching {url}: {e}")
-                return None
+            # except Exception as e:
+            #     print(f"Error fetching {url}: {e}")
+            #     return None
 
     # Builds the booking.com URL
     async def build_url(self):
