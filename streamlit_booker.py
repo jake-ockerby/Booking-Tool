@@ -218,6 +218,7 @@ if st.button("Search", type="primary"):
         with st.spinner("Bear with me ...", show_time=True):
             result_df = run_async_in_thread(booker.booking_search)
         st.success("Search complete!")
+        st.write(type(result_df))
         st.write(result_df[1])
 
         column_config = {
