@@ -199,9 +199,10 @@ class Booker:
         
 
         async with async_playwright() as p:
-            browser = await p.chromium.launch(headless="new")
+            browser = await p.chromium.launch(headless=True)
             context = await browser.new_context()
             page = await context.new_page()
+            await stealth_async(page)
             # try:
             await page.goto(url, timeout=60000, wait_until="domcontentloaded")
             text = await page.inner_text('body')
