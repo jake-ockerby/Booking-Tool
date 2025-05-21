@@ -218,36 +218,35 @@ if st.button("Search", type="primary"):
         with st.spinner("Bear with me ...", show_time=True):
             result_df = run_async_in_thread(booker.booking_search)
         st.success("Search complete!")
-        st.write(type(result_df))
-        st.write(result_df[1])
+        st.write(result_df)
 
-        column_config = {
-            "hotel_link": st.column_config.LinkColumn("hotel_link", display_text="Hotel Link"),
-            "flight_link": st.column_config.LinkColumn("flight_link", display_text="Flight Link")
-        }
-        st.dataframe(result_df[0], column_config=column_config, hide_index=True)
+    #     column_config = {
+    #         "hotel_link": st.column_config.LinkColumn("hotel_link", display_text="Hotel Link"),
+    #         "flight_link": st.column_config.LinkColumn("flight_link", display_text="Flight Link")
+    #     }
+    #     st.dataframe(result_df[0], column_config=column_config, hide_index=True)
 
-        excel = convert_df(result_df)
-        st.download_button("Download Results", data=excel, file_name="search_results.xlsx", type="primary")
+    #     excel = convert_df(result_df)
+    #     st.download_button("Download Results", data=excel, file_name="search_results.xlsx", type="primary")
 
-    # If both airport destinations are non-empty, run the flights search
-    elif airport_from and airport_to:
-        with st.spinner("Bear with me ...", show_time=True):
-            result_df = run_async_in_thread(booker.kayak_flights_search)
-        if result_df.empty:
-            st.error("Failed to gather flight information - please try again.")
-        else:
-            st.success("Flight search complete!")
-            column_config = {
-                "hotel_link": st.column_config.LinkColumn("hotel_link", display_text="Hotel Link"),
-                "flight_link": st.column_config.LinkColumn("flight_link", display_text="Flight Link")
-            }
-            st.dataframe(result_df, column_config=column_config, hide_index=True)
+    # # If both airport destinations are non-empty, run the flights search
+    # elif airport_from and airport_to:
+    #     with st.spinner("Bear with me ...", show_time=True):
+    #         result_df = run_async_in_thread(booker.kayak_flights_search)
+    #     if result_df.empty:
+    #         st.error("Failed to gather flight information - please try again.")
+    #     else:
+    #         st.success("Flight search complete!")
+    #         column_config = {
+    #             "hotel_link": st.column_config.LinkColumn("hotel_link", display_text="Hotel Link"),
+    #             "flight_link": st.column_config.LinkColumn("flight_link", display_text="Flight Link")
+    #         }
+    #         st.dataframe(result_df, column_config=column_config, hide_index=True)
 
-            excel = convert_df(result_df)
-            st.download_button("Download Results", data=excel, file_name="search_results.xlsx", type="primary")
+    #         excel = convert_df(result_df)
+    #         st.download_button("Download Results", data=excel, file_name="search_results.xlsx", type="primary")
 
-    # Else display a warning
-    else:
-        st.warning("Please enter a hotel location or a valid pair of airports.")
+    # # Else display a warning
+    # else:
+    #     st.warning("Please enter a hotel location or a valid pair of airports.")
             
