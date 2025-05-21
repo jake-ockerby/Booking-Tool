@@ -62,7 +62,7 @@ class Booker:
             try:
                 async with session.get(url, timeout=10) as response:
                     # return await response.text()
-                    return await response.status
+                    return response.status
             except Exception as e:
                 print(f"Error fetching {url}: {e}")
                 return None
