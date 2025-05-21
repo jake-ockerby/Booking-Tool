@@ -61,8 +61,7 @@ class Booker:
         async with semaphore:
             try:
                 async with session.get(url, timeout=10) as response:
-                    # return await response.text()
-                    return response.status
+                    return await response.text()
             except Exception as e:
                 print(f"Error fetching {url}: {e}")
                 return None
@@ -160,35 +159,35 @@ class Booker:
         locations = page.findAll('span', {'data-testid': 'address'})
         hotels = [h.text.strip() for h in hotels]
     
-        # Loop over the hotel cards and extract information
-        for hotel, a, loc in zip(hotels, links, locations):
-            try:
-                name = hotel.split('Opens in new window')[0].strip()
-                link = a['href']
-                location = ', '.join(loc)
-                rating = float(hotel.split('Scored')[1][:4].strip())
-                review = int(re.sub(r'[^0-9]', '', hotel.split('reviews')[0][-8:]))
-                try:
-                    price = int(re.sub(r'[^0-9]', '', hotel.split('Price')[1][:8]))
-                except:
-                    price = int(re.sub(r'[^0-9]', '', hotel.split('Current price')[1][:8]))
+        # # Loop over the hotel cards and extract information
+        # for hotel, a, loc in zip(hotels, links, locations):
+        #     try:
+        #         name = hotel.split('Opens in new window')[0].strip()
+        #         link = a['href']
+        #         location = ', '.join(loc)
+        #         rating = float(hotel.split('Scored')[1][:4].strip())
+        #         review = int(re.sub(r'[^0-9]', '', hotel.split('reviews')[0][-8:]))
+        #         try:
+        #             price = int(re.sub(r'[^0-9]', '', hotel.split('Price')[1][:8]))
+        #         except:
+        #             price = int(re.sub(r'[^0-9]', '', hotel.split('Current price')[1][:8]))
 
-                # Add to dictionary
-                hotels_data['name'].append(name)
-                hotels_data['location'].append(location)
-                hotels_data['date_from'].append(date[0])
-                hotels_data['date_to'].append(date[1])
-                hotels_data['hotel_link'].append(link)
-                hotels_data['hotel_price'].append(price)
-                hotels_data['rating'].append(rating)
-                hotels_data['reviews'].append(review)
-            except:
-                continue
+        #         # Add to dictionary
+        #         hotels_data['name'].append(name)
+        #         hotels_data['location'].append(location)
+        #         hotels_data['date_from'].append(date[0])
+        #         hotels_data['date_to'].append(date[1])
+        #         hotels_data['hotel_link'].append(link)
+        #         hotels_data['hotel_price'].append(price)
+        #         hotels_data['rating'].append(rating)
+        #         hotels_data['reviews'].append(review)
+        #     except:
+        #         continue
 
-        # Convert dictionary to dataframe and return
-        hotels_df = pd.DataFrame(hotels_data)
+        # # Convert dictionary to dataframe and return
+        # hotels_df = pd.DataFrame(hotels_data)
         
-        return hotels_df
+        return hotels
 
     # Builds Kayak URL for flights
     async def build_kayak_flight_url(self):
@@ -373,10 +372,10 @@ class Booker:
                 tasks = [self.fetch(session, url) for url in batch_urls]
                 html_pages = await asyncio.gather(*tasks)
         
-        #         tasks = [self.extract_hotels_from_page(html, date) for html, date in zip(html_pages, batch_dates)]
-        #         batch_results = await asyncio.gather(*tasks)
+                tasks = [self.extract_hotels_from_page(html, date) for html, date in zip(html_pages, batch_dates)]
+                batch_results = await asyncio.gather(*tasks)
                 
-        #         hotels_list.extend(batch_results)
+                hotels_list.extend(batch_results)
     
         # # Concatenate into one large dataframe
         # all_best_hotels = pd.concat(hotels_list)
@@ -442,4 +441,4 @@ class Booker:
         #                                            'vm_score', 'hotel_link', 'flight_link']].copy()
 
         # Return final results
-        return html_pages
+        return hotels_list[0]
