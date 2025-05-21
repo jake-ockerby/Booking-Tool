@@ -154,10 +154,10 @@ class Booker:
 
         # Using BeautifulSoup to extract all hotel cards
         page = BeautifulSoup(html, 'lxml') 
-        hotels = page.findAll('div', {'data-testid': 'property-card'})
-        links = page.findAll('a', {'data-testid': 'availability-cta-btn'}, href=True)
-        locations = page.findAll('span', {'data-testid': 'address'})
-        hotels = [h.text.strip() for h in hotels]
+        # hotels = page.findAll('div', {'data-testid': 'property-card'})
+        # links = page.findAll('a', {'data-testid': 'availability-cta-btn'}, href=True)
+        # locations = page.findAll('span', {'data-testid': 'address'})
+        # hotels = [h.text.strip() for h in hotels]
     
         # # Loop over the hotel cards and extract information
         # for hotel, a, loc in zip(hotels, links, locations):
@@ -187,7 +187,7 @@ class Booker:
         # # Convert dictionary to dataframe and return
         # hotels_df = pd.DataFrame(hotels_data)
         
-        return hotels
+        return page.text
 
     # Builds Kayak URL for flights
     async def build_kayak_flight_url(self):
