@@ -372,10 +372,10 @@ class Booker:
                 tasks = [self.fetch(session, url) for url in batch_urls]
                 html_pages = await asyncio.gather(*tasks)
         
-                tasks = [self.extract_hotels_from_page(html, date) for html, date in zip(html_pages, batch_dates)]
-                batch_results = await asyncio.gather(*tasks)
+                # tasks = [self.extract_hotels_from_page(html, date) for html, date in zip(html_pages, batch_dates)]
+                # batch_results = await asyncio.gather(*tasks)
                 
-                hotels_list.extend(batch_results)
+                # hotels_list.extend(batch_results)
     
         # # Concatenate into one large dataframe
         # all_best_hotels = pd.concat(hotels_list)
@@ -441,4 +441,4 @@ class Booker:
         #                                            'vm_score', 'hotel_link', 'flight_link']].copy()
 
         # Return final results
-        return hotels_list[0]
+        return html_pages[0]
