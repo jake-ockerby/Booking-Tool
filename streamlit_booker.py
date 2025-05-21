@@ -216,8 +216,9 @@ if st.button("Search", type="primary"):
     # If hotel location is non-empty, run the full booking search
     if location:
         with st.spinner("Bear with me ...", show_time=True):
-            result_df = run_async_in_thread(booker.booking_search)
+            result_df, statuses = run_async_in_thread(booker.booking_search)
         st.success("Search complete!")
+        st.write(statuses)
 
         column_config = {
             "hotel_link": st.column_config.LinkColumn("hotel_link", display_text="Hotel Link"),

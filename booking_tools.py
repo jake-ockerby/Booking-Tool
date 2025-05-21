@@ -1,6 +1,5 @@
 # Code Author: Jake Ockerby
 
-import streamlit as st
 import asyncio
 import nest_asyncio
 import aiohttp
@@ -62,8 +61,7 @@ class Booker:
         async with semaphore:
             try:
                 async with session.get(url, timeout=10) as response:
-                    st.write(response.status)
-                    return await response.text()
+                    return await response.text(), response.status
             except Exception as e:
                 print(f"Error fetching {url}: {e}")
                 return None
@@ -371,7 +369,7 @@ class Booker:
                 batch_urls = urls[i:i+batch_size]
                 batch_dates = dates[i:i+batch_size]
                 
-                tasks = [self.fetch(session, url) for url in batch_urls]
+                tasks, statuses = [self.fetch(session, url) for url in batch_urls]
                 html_pages = await asyncio.gather(*tasks)
         
                 tasks = [self.extract_hotels_from_page(html, date) for html, date in zip(html_pages, batch_dates)]
@@ -443,4 +441,4 @@ class Booker:
                                                    'vm_score', 'hotel_link', 'flight_link']].copy()
 
         # Return final results
-        return all_best_hotels
+        return all_best_hotels, statuses
