@@ -68,6 +68,7 @@ class Booker:
         async with semaphore:
             try:
                 async with session.get(scraperapi_url, timeout=10) as response:
+                    print(response.text())
                     return await response.text()
             except Exception as e:
                 print(f"Error fetching {url}: {e}")
