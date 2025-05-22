@@ -60,7 +60,7 @@ class Booker:
         self.batch_size = 20
       
     def build_scraperapi_url(self, target_url, country_code="uk"):
-        return f"http://api.scraperapi.com?api_key={API_KEY}&url={quote(target_url)}&premium=true&country_code={country_code}"
+        return f"http://api.scraperapi.com?api_key={API_KEY}&url={quote(target_url)}&ultra_premium=true&country_code={country_code}"
 
     # Asynchronous fetch
     async def fetch(self, session, url):
