@@ -19,10 +19,8 @@ nest_asyncio.apply()  # Allows nested async loops (for Jupyter)
 HEADERS = {'User-Agent': 'Mozilla/5.0 (X11; CrOS x86_64 8172.45.0) AppleWebKit/537.36 (KHTML, like Gecko) Chrome/51.0.2704.64 Safari/537.36',
        'Accept-Language': 'en-US, en;q=0.5'
       }
-proxies = {
-  "https": "scraperapi.country_code=uk:1ecc066a30605371c68cb8f985a830c4@proxy-server.scraperapi.com:8001"
-}
-semaphore = asyncio.Semaphore(20)
+proxy = "https://scraperapi.country_code=uk:1ecc066a30605371c68cb8f985a830c4@proxy-server.scraperapi.com:8001"
+semaphore = asyncio.Semaphore(5)
 
 class Booker:
     def __init__(self, location, from_, to_, adults, children, rooms, sort, holiday_length, airport_from=None,
@@ -63,7 +61,7 @@ class Booker:
     async def fetch(self, session, url):
         async with semaphore:
             try:
-                async with session.get(url, timeout=10, proxies=proxies, verify=False) as response:
+                async with session.get(url, timeout=10, proxy=proxy, ssl=False) as response:
                     return await response.text()
             except Exception as e:
                 print(f"Error fetching {url}: {e}")
