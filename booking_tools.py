@@ -68,7 +68,6 @@ class Booker:
         async with semaphore:
             try:
                 async with session.get(scraperapi_url, timeout=10) as response:
-                    await print(response.text())
                     return await response.text()
             except Exception as e:
                 print(f"Error fetching {url}: {e}")
@@ -163,6 +162,7 @@ class Booker:
 
         # Using BeautifulSoup to extract all hotel cards
         page = BeautifulSoup(html, 'lxml') 
+        print(page.text)
         hotels = page.findAll('div', {'data-testid': 'property-card'})
         links = page.findAll('a', {'data-testid': 'availability-cta-btn'}, href=True)
         locations = page.findAll('span', {'data-testid': 'address'})
