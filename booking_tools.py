@@ -9,7 +9,7 @@ import pandas as pd
 from scipy import stats
 from playwright.async_api import async_playwright
 from playwright_stealth import stealth_async
-from urllib.parse import urlparse, urlencode, parse_qs
+from urllib.parse import urlparse, urlencode, parse_qs, quote
 from datetime import date, datetime, timedelta
 import time
 import re
@@ -19,8 +19,11 @@ nest_asyncio.apply()  # Allows nested async loops (for Jupyter)
 HEADERS = {'User-Agent': 'Mozilla/5.0 (X11; CrOS x86_64 8172.45.0) AppleWebKit/537.36 (KHTML, like Gecko) Chrome/51.0.2704.64 Safari/537.36',
        'Accept-Language': 'en-US, en;q=0.5'
       }
-proxy = "https://scraperapi.country_code=uk:1ecc066a30605371c68cb8f985a830c4@proxy-server.scraperapi.com:8001"
-semaphore = asyncio.Semaphore(5)
+API_KEY = "1ecc066a30605371c68cb8f985a830c4"
+# proxies = {
+#   "https": "scraperapi.country_code=uk:1ecc066a30605371c68cb8f985a830c4@proxy-server.scraperapi.com:8001"
+# }
+semaphore = asyncio.Semaphore(20)
 
 class Booker:
     def __init__(self, location, from_, to_, adults, children, rooms, sort, holiday_length, airport_from=None,
@@ -55,13 +58,16 @@ class Booker:
         self.price_max = price_range[1]
         self.clean_airport_names = clean_airport_names
         self.batch_size = 20
-        
+      
+    def build_scraperapi_url(self, target_url, country_code="uk"):
+        return f"http://api.scraperapi.com?api_key={API_KEY}&url={quote(target_url)}&country_code={country_code}"
 
     # Asynchronous fetch
     async def fetch(self, session, url):
+        scraperapi_url = self.build_scraperapi_url(url)
         async with semaphore:
             try:
-                async with session.get(url, timeout=10, proxy=proxy, ssl=False) as response:
+                async with session.get(scraperapi_url, timeout=10) as response:
                     return await response.text()
             except Exception as e:
                 print(f"Error fetching {url}: {e}")
