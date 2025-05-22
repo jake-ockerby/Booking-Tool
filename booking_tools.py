@@ -331,25 +331,25 @@ class Booker:
         # Call the function that builds the flight URLs and extract the prices
         urls, dates, airport_from_clean, airport_to_clean, end_date = await self.build_kayak_flight_url()
         # Sometimes fails to load webpage on first try
-        # try:
-        tasks = [self.get_kayak_flight_prices(url, daterange, end_date) for url, daterange in zip(urls, dates)]
-        flights_list = await asyncio.gather(*tasks)
-
-        # Concatenate into one large dataframe
-        all_flight_info = pd.concat(flights_list)
-        all_flight_info['airport_from'] = airport_from_clean
-        all_flight_info['airport_to'] = airport_to_clean
-        all_flight_info = all_flight_info[['airport_from', 'airport_to', 'date_from', 'date_to', 'approx_flight_price', 'flight_link']].copy()
-
-        # Edit the prices so that it reflects the total price for all passengers
-        all_flight_info['approx_flight_price'] = all_flight_info['approx_flight_price']*(self.adults + self.children)
-        all_flight_info = all_flight_info.sort_values(by='approx_flight_price', ascending=True)
-
-        # Convert the dummy integer value to 'Missing'
-        all_flight_info = all_flight_info.replace(9999*(self.adults + self.children), 'Missing')
-        # except:
-        #     print('Failed to gather flight information - please try again.')
-        #     all_flight_info = pd.DataFrame()
+        try:
+            tasks = [self.get_kayak_flight_prices(url, daterange, end_date) for url, daterange in zip(urls, dates)]
+            flights_list = await asyncio.gather(*tasks)
+    
+            # Concatenate into one large dataframe
+            all_flight_info = pd.concat(flights_list)
+            all_flight_info['airport_from'] = airport_from_clean
+            all_flight_info['airport_to'] = airport_to_clean
+            all_flight_info = all_flight_info[['airport_from', 'airport_to', 'date_from', 'date_to', 'approx_flight_price', 'flight_link']].copy()
+    
+            # Edit the prices so that it reflects the total price for all passengers
+            all_flight_info['approx_flight_price'] = all_flight_info['approx_flight_price']*(self.adults + self.children)
+            all_flight_info = all_flight_info.sort_values(by='approx_flight_price', ascending=True)
+    
+            # Convert the dummy integer value to 'Missing'
+            all_flight_info = all_flight_info.replace(9999*(self.adults + self.children), 'Missing')
+        except:
+            print('Failed to gather flight information - please try again.')
+            all_flight_info = pd.DataFrame()
 
         # Return the results
         return all_flight_info
