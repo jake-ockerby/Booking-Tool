@@ -138,6 +138,7 @@ class Booker:
                     "nflt": f"ht_id=204;review_score={self.review_score}" + mealplan_str + twin_str + stars_str + distance_str + pricerange_str
                 }
                 url = f"{base_url}?{urlencode(query)}"
+                print(url)
 
                 # Append each URL and set of dates to lists
                 urls.append(url)
