@@ -189,71 +189,6 @@ class Booker:
         
         return hotels_df
     
-    
-    # Extracts the text from each hotel card displayed on the webpage
-    async def extract_hotels_from_page_playwright(self, url, date):
-        # Store information gathered in a dictionary
-        hotels_data = {'name': [], 'location': [], 'date_from': [], 'date_to': [],
-                       'hotel_price': [], 'rating': [], 'reviews': [], 'hotel_link': []}
-        
-        
-
-        async with async_playwright() as p:
-            browser = await p.chromium.launch(
-                headless=True,
-                args=[
-                    "--no-sandbox",
-                    "--disable-setuid-sandbox",
-                    "--disable-dev-shm-usage"
-                ]
-            )
-            context = await browser.new_context()
-            page = await context.new_page()
-            await stealth_async(page)
-            # try:
-            await page.goto(url, timeout=60000, wait_until="domcontentloaded")
-            text = await page.inner_text('body')
-            # except:
-            #     text = 'Failed'
-        #     await page.wait_for_selector('[data-testid="property-card"]', timeout=10000)
-    
-        #     hotels = await page.query_selector_all('[data-testid="property-card"]')
-    
-        #     # Loop over the hotel cards and extract information
-        #     for hotel in hotels:
-        #         try:
-        #             name = await hotel.locator('[data-testid="title"]').inner_text()
-        #             location = await hotel.locator('[data-testid="address"]').inner_text()
-        #             link = await hotel.locator('[data-testid="availability-cta-btn"]').get_attribute("href")
-        #             inner_text = await hotel.inner_text()
-        #             rating = float(re.search(r'Scored\s+([0-9.]+)', inner_text).group(1))
-        #             review = int(re.search(r'([0-9,]+)\s+reviews?', inner_text).group(1).replace(",", ""))
-        #             try:
-        #                 price_match = re.search(r'Price.*?(\d[\d,]*)', inner_text) or \
-        #                               re.search(r'Current price.*?(\d[\d,]*)', inner_text)
-        #                 price = int(price_match.group(1).replace(",", "")) if price_match else None
-        #             except:
-        #                 price = None
-                        
-        #             # Add to dictionary
-        #             hotels_data['name'].append(name)
-        #             hotels_data['location'].append(location)
-        #             hotels_data['date_from'].append(date[0])
-        #             hotels_data['date_to'].append(date[1])
-        #             hotels_data['hotel_link'].append(link)
-        #             hotels_data['hotel_price'].append(price)
-        #             hotels_data['rating'].append(rating)
-        #             hotels_data['reviews'].append(review)
-        #         except:
-        #             continue
-                
-            # await browser.close()
-
-        # # Convert dictionary to dataframe and return
-        # hotels_df = pd.DataFrame(hotels_data)
-        
-        return text
-    
 
     # Builds Kayak URL for flights
     async def build_kayak_flight_url(self):
@@ -435,76 +370,75 @@ class Booker:
                 batch_urls = urls[i:i+batch_size]
                 batch_dates = dates[i:i+batch_size]
                 
-                # tasks = [self.fetch(session, url) for url in batch_urls]
-                # html_pages = await asyncio.gather(*tasks)
+                tasks = [self.fetch(session, url) for url in batch_urls]
+                html_pages = await asyncio.gather(*tasks)
         
-                # tasks = [self.extract_hotels_from_page(html, date) for html, date in zip(html_pages, batch_dates)]
-                tasks = [self.extract_hotels_from_page_playwright(url, date) for url, date in zip(batch_urls, batch_dates)]
+                tasks = [self.extract_hotels_from_page(html, date) for html, date in zip(html_pages, batch_dates)]
                 batch_results = await asyncio.gather(*tasks)
                 hotels_list.extend(batch_results)
     
-        # # Concatenate into one large dataframe
-        # all_best_hotels = pd.concat(hotels_list)
+        # Concatenate into one large dataframe
+        all_best_hotels = pd.concat(hotels_list)
         
-        # # Drop duplicates
-        # all_best_hotels = all_best_hotels.drop_duplicates(subset=['name', 'rating', 'reviews',
-        #                                                   'date_from', 'date_to'])
+        # Drop duplicates
+        all_best_hotels = all_best_hotels.drop_duplicates(subset=['name', 'rating', 'reviews',
+                                                          'date_from', 'date_to'])
 
-        # # If user inputs airport information, execute the flights search and calculate a total price
-        # if (self.airport_from != None) & (self.airport_to != None):
-        #     flights_df = asyncio.run(self.kayak_flights_search())
-        #     if len(flights_df) > 0:    
-        #         all_best_hotels = all_best_hotels.merge(flights_df, on=['date_from', 'date_to'], how='left')
-        #         # Use dummy integer value in place of 'Missing' - needed for further calculations
-        #         all_best_hotels = all_best_hotels.replace('Missing', 99999)
-        #         all_best_hotels['approx_flight_price'] = all_best_hotels['approx_flight_price'].astype(int)
-        #         all_best_hotels['total_price'] = all_best_hotels['hotel_price'] + all_best_hotels['approx_flight_price']
-        #     else:
-        #         all_best_hotels = all_best_hotels.rename(columns={'date_from': 'checkin_date', 'date_to': 'checkout_date',
-        #                                                       'hotel_price': 'total_price'})
-        # else:
-        #     all_best_hotels = all_best_hotels.rename(columns={'date_from': 'checkin_date', 'date_to': 'checkout_date',
-        #                                                       'hotel_price': 'total_price'})
+        # If user inputs airport information, execute the flights search and calculate a total price
+        if (self.airport_from != None) & (self.airport_to != None):
+            flights_df = asyncio.run(self.kayak_flights_search())
+            if len(flights_df) > 0:    
+                all_best_hotels = all_best_hotels.merge(flights_df, on=['date_from', 'date_to'], how='left')
+                # Use dummy integer value in place of 'Missing' - needed for further calculations
+                all_best_hotels = all_best_hotels.replace('Missing', 99999)
+                all_best_hotels['approx_flight_price'] = all_best_hotels['approx_flight_price'].astype(int)
+                all_best_hotels['total_price'] = all_best_hotels['hotel_price'] + all_best_hotels['approx_flight_price']
+            else:
+                all_best_hotels = all_best_hotels.rename(columns={'date_from': 'checkin_date', 'date_to': 'checkout_date',
+                                                              'hotel_price': 'total_price'})
+        else:
+            all_best_hotels = all_best_hotels.rename(columns={'date_from': 'checkin_date', 'date_to': 'checkout_date',
+                                                              'hotel_price': 'total_price'})
     
-        # # Scale columns to be within a range of 0 and 1 - price is represented as the percentile value over all prices
-        # all_best_hotels['price_percentile'] = stats.percentileofscore(all_best_hotels['total_price'], all_best_hotels['total_price'])*0.01
-        # all_best_hotels['rating_scaled'] = all_best_hotels['rating']*0.1
+        # Scale columns to be within a range of 0 and 1 - price is represented as the percentile value over all prices
+        all_best_hotels['price_percentile'] = stats.percentileofscore(all_best_hotels['total_price'], all_best_hotels['total_price'])*0.01
+        all_best_hotels['rating_scaled'] = all_best_hotels['rating']*0.1
         
-        # # Build VM (Value for Money) score
-        # all_best_hotels['vm_score_unrounded'] = 100*(((1-all_best_hotels['price_percentile'])+all_best_hotels['rating_scaled'])/2)
+        # Build VM (Value for Money) score
+        all_best_hotels['vm_score_unrounded'] = 100*(((1-all_best_hotels['price_percentile'])+all_best_hotels['rating_scaled'])/2)
         
-        # # Sort final results based on user input
-        # if self.sort == 'Price & Rating':
-        #     all_best_hotels = all_best_hotels.sort_values(by='vm_score_unrounded', ascending=False)
+        # Sort final results based on user input
+        if self.sort == 'Price & Rating':
+            all_best_hotels = all_best_hotels.sort_values(by='vm_score_unrounded', ascending=False)
             
-        # elif self.sort == 'Price':
-        #     all_best_hotels = all_best_hotels.sort_values(by='total_price', ascending=True)
+        elif self.sort == 'Price':
+            all_best_hotels = all_best_hotels.sort_values(by='total_price', ascending=True)
         
-        # else:
-        #     all_best_hotels = all_best_hotels.sort_values(by='rating', ascending=False)
+        else:
+            all_best_hotels = all_best_hotels.sort_values(by='rating', ascending=False)
     
-        # # Apply rounding to VM score
-        # all_best_hotels['vm_score'] = round(all_best_hotels['vm_score_unrounded'])
-        # all_best_hotels['vm_score'] = all_best_hotels['vm_score'].astype(int)
+        # Apply rounding to VM score
+        all_best_hotels['vm_score'] = round(all_best_hotels['vm_score_unrounded'])
+        all_best_hotels['vm_score'] = all_best_hotels['vm_score'].astype(int)
     
-        # # Drop scaled columns
-        # all_best_hotels.drop('price_percentile', axis=1, inplace=True)
-        # all_best_hotels.drop('rating_scaled', axis=1, inplace=True)
-        # all_best_hotels.drop('vm_score_unrounded', axis=1, inplace=True)
+        # Drop scaled columns
+        all_best_hotels.drop('price_percentile', axis=1, inplace=True)
+        all_best_hotels.drop('rating_scaled', axis=1, inplace=True)
+        all_best_hotels.drop('vm_score_unrounded', axis=1, inplace=True)
 
-        # # If user inputs airport information, revert the dummy integer values implemented earlier,
-        # # and rename and return appropriate columns
-        # if (self.airport_from != None) & (self.airport_to != None):
-        #     if len(flights_df) > 0:
-        #         all_best_hotels['total_price'] = np.where(all_best_hotels['approx_flight_price'] == 99999,
-        #                                                   'Missing', all_best_hotels['total_price'])
-        #         all_best_hotels['approx_flight_price'] = np.where(all_best_hotels['approx_flight_price'] == 99999,
-        #                                                    'Missing', all_best_hotels['approx_flight_price'])
+        # If user inputs airport information, revert the dummy integer values implemented earlier,
+        # and rename and return appropriate columns
+        if (self.airport_from != None) & (self.airport_to != None):
+            if len(flights_df) > 0:
+                all_best_hotels['total_price'] = np.where(all_best_hotels['approx_flight_price'] == 99999,
+                                                          'Missing', all_best_hotels['total_price'])
+                all_best_hotels['approx_flight_price'] = np.where(all_best_hotels['approx_flight_price'] == 99999,
+                                                           'Missing', all_best_hotels['approx_flight_price'])
                 
-        #         all_best_hotels = all_best_hotels.rename(columns={'date_from': 'depart', 'date_to': 'return'})
-        #         all_best_hotels = all_best_hotels[['name', 'location', 'airport_from', 'airport_to', 'depart', 'return',
-        #                                            'rating', 'reviews', 'hotel_price', 'approx_flight_price', 'total_price',
-        #                                            'vm_score', 'hotel_link', 'flight_link']].copy()
+                all_best_hotels = all_best_hotels.rename(columns={'date_from': 'depart', 'date_to': 'return'})
+                all_best_hotels = all_best_hotels[['name', 'location', 'airport_from', 'airport_to', 'depart', 'return',
+                                                   'rating', 'reviews', 'hotel_price', 'approx_flight_price', 'total_price',
+                                                   'vm_score', 'hotel_link', 'flight_link']].copy()
 
         # Return final results
-        return hotels_list[0]
+        return all_best_hotels
