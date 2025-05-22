@@ -66,12 +66,12 @@ class Booker:
     async def fetch(self, session, url):
         scraperapi_url = self.build_scraperapi_url(url)
         async with semaphore:
-            try:
-                async with session.get(scraperapi_url, timeout=10) as response:
-                    return await response.text()
-            except Exception as e:
-                print(f"Error fetching {url}: {e}")
-                return None
+            # try:
+            async with session.get(scraperapi_url, timeout=10) as response:
+                return await response.text()
+            # except Exception as e:
+            #     print(f"Error fetching {url}: {e}")
+            #     return None
 
     # Builds the booking.com URL
     async def build_url(self):
