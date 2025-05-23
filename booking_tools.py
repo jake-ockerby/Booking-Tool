@@ -224,7 +224,7 @@ class Booker:
             await asyncio.sleep(random.uniform(1, 3))
             browser = await p.chromium.launch_persistent_context(
                 user_data_dir="./tmp-user-data",
-                headless=False,  # Headed is often less suspicious
+                headless=True
             )
             context = await browser.new_context(
                 user_agent="Mozilla/5.0 (Windows NT 10.0; Win64; x64) AppleWebKit/537.36 (KHTML, like Gecko) Chrome/122.0.0.0 Safari/537.36",
