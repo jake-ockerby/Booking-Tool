@@ -59,15 +59,15 @@ class Booker:
         self.clean_airport_names = clean_airport_names
         self.batch_size = 20
       
-    def build_scraperapi_url(self, target_url, country_code="uk"):
-        return f"http://api.scraperapi.com?api_key={API_KEY}&url={quote(target_url)}&premium=true&render=true&country_code={country_code}"
+    # def build_scraperapi_url(self, target_url, country_code="uk"):
+    #     return f"http://api.scraperapi.com?api_key={API_KEY}&url={quote(target_url)}&premium=true&country_code={country_code}"
 
     # Asynchronous fetch
     async def fetch(self, session, url):
-        scraperapi_url = self.build_scraperapi_url(url)
+        # scraperapi_url = self.build_scraperapi_url(url)
         async with semaphore:
             # try:
-            async with session.get(scraperapi_url, timeout=60) as response:
+            async with session.get(url, timeout=60) as response:
                 return await response.text()
             # except Exception as e:
             #     print(f"Error fetching {url}: {e}")
@@ -162,7 +162,7 @@ class Booker:
 
         # Using BeautifulSoup to extract all hotel cards
         page = BeautifulSoup(html, 'lxml') 
-        print(page.text)
+        # print(page.text)
         hotels = page.findAll('div', {'data-testid': 'property-card'})
         links = page.findAll('a', {'data-testid': 'availability-cta-btn'}, href=True)
         locations = page.findAll('span', {'data-testid': 'address'})
