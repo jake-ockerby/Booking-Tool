@@ -268,19 +268,19 @@ class Booker:
                         rating = await card.locator('[data-testid="review-score"] >> text=/[0-9]+\\.?[0-9]*/').inner_text()
                         rating = float(rating.strip())
                     except:
-                        rating = None
+                        rating = 9999
     
                     try:
                         review_text = await card.locator('[data-testid="review-score"] span').all_inner_texts()
                         review = int(re.sub(r'[^0-9]', '', review_text[-1])) if review_text else None
                     except:
-                        review = None
+                        review = 9999
     
                     try:
                         price_text = await card.locator('[data-testid="price-and-discounted-price"]').inner_text()
                         price = int(re.sub(r'[^0-9]', '', price_text))
                     except:
-                        price = None
+                        price = 9999
     
                     hotels_data['name'].append(name)
                     hotels_data['location'].append(location)
