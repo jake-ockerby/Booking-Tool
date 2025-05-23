@@ -107,17 +107,17 @@ class Booker:
     # Polls the result for a given job ID
     async def fetch_result(self, session, job_id, url):
         result_url = f"https://async.scraperapi.com/jobs/{job_id}?apiKey={API_KEY}"
-        for _ in range(15):  # Try for up to 30 seconds
-            try:
-                async with session.get(result_url) as response:
-                    text = await response.text()
-                    if "<html" in text:  # Crude check for HTML
-                        return text
-            except:
-                pass
-            await asyncio.sleep(2)
-        print(f"Failed to fetch result for {url}")
-        return None
+        # for _ in range(15):  # Try for up to 30 seconds
+            # try:
+        async with session.get(result_url) as response:
+            text = await response.text()
+            # if "<html" in text:  # Crude check for HTML
+            return text
+            # except:
+            #     pass
+        #     await asyncio.sleep(2)
+        # print(f"Failed to fetch result for {url}")
+        # return None
 
     # Builds the booking.com URL
     async def build_url(self):
