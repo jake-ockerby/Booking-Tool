@@ -106,7 +106,7 @@ class Booker:
     
     # Polls the result for a given job ID
     async def fetch_result(self, session, job_id, url):
-        result_url = f"https://async.scraperapi.com/jobs/{job_id}?apiKey={self.api_key}"
+        result_url = f"https://async.scraperapi.com/jobs/{job_id}?apiKey={API_KEY}"
         for _ in range(15):  # Try for up to 30 seconds
             try:
                 async with session.get(result_url) as response:
