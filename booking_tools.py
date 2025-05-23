@@ -224,7 +224,7 @@ class Booker:
             await asyncio.sleep(random.uniform(1, 3))
     
             browser_context = await p.chromium.launch_persistent_context(
-                user_data_dir="./tmp-user-data",
+                user_data_dir="/home/user/chrome-profile",
                 headless=True,
                 viewport={"width": 1280, "height": 800},
                 user_agent=(
@@ -242,10 +242,12 @@ class Booker:
     
             # Optional: Use stealth-like evasion
             await page.evaluate("""() => {
-                Object.defineProperty(navigator, 'webdriver', {get: () => undefined});
+                Object.defineProperty(navigator, 'webdriver', { get: () => undefined });
                 window.chrome = { runtime: {} };
                 Object.defineProperty(navigator, 'languages', { get: () => ['en-GB', 'en'] });
                 Object.defineProperty(navigator, 'plugins', { get: () => [1, 2, 3] });
+                Object.defineProperty(navigator, 'platform', { get: () => 'Win32' });
+                Object.defineProperty(navigator, 'hardwareConcurrency', { get: () => 4 });
             }""")
     
             # try:
