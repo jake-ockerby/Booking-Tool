@@ -13,6 +13,7 @@ from urllib.parse import urlparse, urlencode, parse_qs, quote
 from datetime import date, datetime, timedelta
 import time
 import re
+import json
 from fuzzywuzzy import fuzz, process
 
 nest_asyncio.apply()  # Allows nested async loops (for Jupyter)
@@ -111,7 +112,8 @@ class Booker:
         # for _ in range(15):  # Try for up to 30 seconds
             # try:
         async with session.get(result_url) as response_new:
-            text = await response_new.json()
+            raw_text = await response_new.text()
+            text = json.loads(raw_text)
             print(text)
             # if "<html" in text:  # Crude check for HTML
             return text
