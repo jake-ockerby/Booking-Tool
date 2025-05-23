@@ -92,6 +92,7 @@ class Booker:
             "apiKey": API_KEY,
             "urls": [url],
             "premium": True,
+            "render": True,
             "country_code": "uk"
         }
         async with semaphore:
