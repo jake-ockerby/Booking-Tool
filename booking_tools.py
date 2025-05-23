@@ -219,39 +219,45 @@ class Booker:
         scraperapi_url = self.build_scraperapi_url(url)
         hotels_data = {'name': [], 'location': [], 'date_from': [], 'date_to': [],
                        'hotel_price': [], 'rating': [], 'reviews': [], 'hotel_link': []}
-        
+    
         async with async_playwright() as p:
             await asyncio.sleep(random.uniform(1, 3))
-            browser = await p.chromium.launch_persistent_context(
+    
+            browser_context = await p.chromium.launch_persistent_context(
                 user_data_dir="./tmp-user-data",
-                headless=True
+                headless=True,
+                viewport={"width": 1280, "height": 800},
+                user_agent=(
+                    "Mozilla/5.0 (Windows NT 10.0; Win64; x64) "
+                    "AppleWebKit/537.36 (KHTML, like Gecko) "
+                    "Chrome/124.0.0.0 Safari/537.36"
+                )
             )
-            context = await browser.new_context(
-                user_agent="Mozilla/5.0 (Windows NT 10.0; Win64; x64) AppleWebKit/537.36 (KHTML, like Gecko) Chrome/122.0.0.0 Safari/537.36",
-                viewport={"width": 1280, "height": 800}
-            )
-            await context.add_cookies([
-                {
-                    "name": "lastSeen",
-                    "value": "true",
-                    "domain": ".booking.com",
-                    "path": "/"
-                }
-            ])
-            page = await context.new_page()
+    
+            page = await browser_context.new_page()
+    
             await page.set_extra_http_headers({
                 "Accept-Language": "en-GB,en;q=0.9",
             })
-            await page.set_user_agent(
-                "Mozilla/5.0 (Windows NT 10.0; Win64; x64) "
-                "AppleWebKit/537.36 (KHTML, like Gecko) "
-                "Chrome/124.0.0.0 Safari/537.36"
-            )
-            await stealth_async(page)
+    
+            # Optional: Use stealth-like evasion
+            await page.evaluate("""() => {
+                Object.defineProperty(navigator, 'webdriver', {get: () => undefined});
+                window.chrome = { runtime: {} };
+                Object.defineProperty(navigator, 'languages', { get: () => ['en-GB', 'en'] });
+                Object.defineProperty(navigator, 'plugins', { get: () => [1, 2, 3] });
+            }""")
+    
+            # try:
             await page.goto(scraperapi_url, wait_until="networkidle")
             print(await page.inner_text('body'))
+            # except Exception as e:
+            #     print(f"Failed to load page: {e}")
+            #     await browser_context.close()
+            #     return pd.DataFrame(hotels_data)
     
             hotel_cards = await page.locator('[data-testid="property-card"]').all()
+    
             for card in hotel_cards:
                 try:
                     name = await card.locator('[data-testid="title"]').inner_text()
@@ -259,7 +265,7 @@ class Booker:
                     link = await card.locator('[data-testid="availability-cta-btn"]').get_attribute('href')
     
                     try:
-                        rating = await card.locator('[data-testid="review-score"] >> text=/[0-9]+\.?[0-9]*/').inner_text()
+                        rating = await card.locator('[data-testid="review-score"] >> text=/[0-9]+\\.?[0-9]*/').inner_text()
                         rating = float(rating.strip())
                     except:
                         rating = None
@@ -276,7 +282,6 @@ class Booker:
                     except:
                         price = None
     
-                    # Add to dictionary
                     hotels_data['name'].append(name)
                     hotels_data['location'].append(location)
                     hotels_data['date_from'].append(date[0])
@@ -289,7 +294,7 @@ class Booker:
                     print(f"Error extracting a hotel card: {e}")
                     continue
     
-            await browser.close()
+            await browser_context.close()
             return pd.DataFrame(hotels_data)
 
 
