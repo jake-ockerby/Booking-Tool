@@ -16,9 +16,20 @@ import re
 from fuzzywuzzy import fuzz, process
 
 nest_asyncio.apply()  # Allows nested async loops (for Jupyter)
-HEADERS = {'User-Agent': 'Mozilla/5.0 (X11; CrOS x86_64 8172.45.0) AppleWebKit/537.36 (KHTML, like Gecko) Chrome/51.0.2704.64 Safari/537.36',
-       'Accept-Language': 'en-US, en;q=0.5'
-      }
+HEADERS = {
+    "User-Agent": (
+        "Mozilla/5.0 (Windows NT 10.0; Win64; x64) "
+        "AppleWebKit/537.36 (KHTML, like Gecko) "
+        "Chrome/124.0.0.0 Safari/537.36"
+    ),
+    "Accept": "text/html,application/xhtml+xml,application/xml;q=0.9,*/*;q=0.8",
+    "Accept-Language": "en-GB,en;q=0.9",
+    "Accept-Encoding": "gzip, deflate",
+    "Connection": "keep-alive",
+}
+# HEADERS = {'User-Agent': 'Mozilla/5.0 (X11; CrOS x86_64 8172.45.0) AppleWebKit/537.36 (KHTML, like Gecko) Chrome/51.0.2704.64 Safari/537.36',
+#        'Accept-Language': 'en-US, en;q=0.5'
+#       }
 API_KEY = "1ecc066a30605371c68cb8f985a830c4"
 # API_URL = "https://async.scraperapi.com/jobs"
 # proxies = {
