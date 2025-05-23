@@ -73,58 +73,20 @@ class Booker:
         self.batch_size = 20
       
     # https://www.booking.com/searchresults.en-gb.html?ss=Antalya&checkin=2025-06-02&checkout=2025-06-03&group_adults=2&group_children=0&no_rooms=1&order=price&nflt=ht_id%3D204%3Breview_score%3D60%3BGBP-0-10000-1
-    # def build_scraperapi_url(self, target_url, country_code="uk"):
-    #     return f"http://api.scraperapi.com?api_key={API_KEY}&url={quote(target_url)}&premium=true&keep_headers=true&country_code={country_code}"
+    def build_scraperapi_url(self, target_url, country_code="uk"):
+        return f"http://api.scraperapi.com?api_key={API_KEY}&url={quote(target_url)}&premium=true&keep_headers=true&country_code={country_code}"
 
-    # # Asynchronous fetch
-    # async def fetch(self, session, url):
-    #     scraperapi_url = self.build_scraperapi_url(url)
-    #     async with semaphore:
-    #         try:
-    #             async with session.get(scraperapi_url, timeout=60) as response:
-    #                 return await response.text()
-    #         except Exception as e:
-    #             print(f"Error fetching {url}: {e}")
-    #             return None
-    
-    # Submits a scraping job and returns the job ID
-    async def submit_job(self, session, url):
-        payload = {
-            "apiKey": API_KEY,
-            "urls": [url],
-            "premium": True,
-            # "render": True,
-            "country_code": "uk"
-        }
+    # Asynchronous fetch
+    async def fetch(self, session, url):
+        scraperapi_url = self.build_scraperapi_url(url)
         async with semaphore:
             try:
-                async with session.post("https://async.scraperapi.com/jobs", json=payload, timeout=60) as response:
-                    data = await response.json()
-                    # print(data)
-                    return data[0]["id"], url
+                async with session.get(scraperapi_url, timeout=60) as response:
+                    return await response.text()
             except Exception as e:
-                print(f"Error submitting job for {url}: {e}")
-                return None, url
+                print(f"Error fetching {url}: {e}")
+                return None
     
-    # Polls the result for a given job ID
-    async def fetch_result(self, session, job_id, url, max_retries=7, delay=2):
-        result_url = f"https://async.scraperapi.com/jobs/{job_id}?apiKey={API_KEY}"
-        
-        for _ in range(max_retries):
-            async with session.get(result_url) as response:
-                raw = await response.read()
-    
-                try:
-                    json_data = json.loads(raw)
-                    if isinstance(json_data, dict) and json_data.get("status") != "succeeded":
-                        await asyncio.sleep(delay)
-                        continue
-                except json.JSONDecodeError:
-                    # If it’s not JSON, it’s probably the final HTML
-                    return raw.decode("utf-8")
-
-        print(f"Job {job_id} did not complete in time.")
-        return None
 
     # Builds the booking.com URL
     async def build_url(self):
@@ -251,6 +213,59 @@ class Booker:
         
         return hotels_df
     
+    
+    async def extract_hotels_from_page_playwright(self, url, date):
+        scraperapi_url = self.build_scraperapi_url(url)
+        hotels_data = {'name': [], 'location': [], 'date_from': [], 'date_to': [],
+                       'hotel_price': [], 'rating': [], 'reviews': [], 'hotel_link': []}
+    
+        async with async_playwright() as p:
+            browser = await p.chromium.launch(headless=True)
+            page = await browser.new_page()
+            await stealth_async(page)
+            await page.goto(scraperapi_url, timeout=30000)
+    
+            hotel_cards = await page.locator('[data-testid="property-card"]').all()
+            for card in hotel_cards:
+                try:
+                    name = await card.locator('[data-testid="title"]').inner_text()
+                    location = await card.locator('[data-testid="address"]').inner_text()
+                    link = await card.locator('[data-testid="availability-cta-btn"]').get_attribute('href')
+    
+                    try:
+                        rating = await card.locator('[data-testid="review-score"] >> text=/[0-9]+\.?[0-9]*/').inner_text()
+                        rating = float(rating.strip())
+                    except:
+                        rating = None
+    
+                    try:
+                        review_text = await card.locator('[data-testid="review-score"] span').all_inner_texts()
+                        review = int(re.sub(r'[^0-9]', '', review_text[-1])) if review_text else None
+                    except:
+                        review = None
+    
+                    try:
+                        price_text = await card.locator('[data-testid="price-and-discounted-price"]').inner_text()
+                        price = int(re.sub(r'[^0-9]', '', price_text))
+                    except:
+                        price = None
+    
+                    # Add to dictionary
+                    hotels_data['name'].append(name)
+                    hotels_data['location'].append(location)
+                    hotels_data['date_from'].append(date[0])
+                    hotels_data['date_to'].append(date[1])
+                    hotels_data['hotel_link'].append(link)
+                    hotels_data['hotel_price'].append(price)
+                    hotels_data['rating'].append(rating)
+                    hotels_data['reviews'].append(review)
+                except Exception as e:
+                    print(f"Error extracting a hotel card: {e}")
+                    continue
+    
+            await browser.close()
+            return pd.DataFrame(hotels_data)
+
 
     # Builds Kayak URL for flights
     async def build_kayak_flight_url(self):
@@ -417,127 +432,45 @@ class Booker:
         return all_flight_info
     
     
-    # # Gathers all hotel information (and flight informtion if specified) and returns one large result dataframe
-    # async def booking_search(self):
-    #     batch_size = self.batch_size
-    #     hotels_list = []
-        
-    #     # Using aiohttp wih a session vastly improves execution time
-    #     connector = aiohttp.TCPConnector(limit=90)
-    #     async with aiohttp.ClientSession(headers=HEADERS, connector=connector) as session:
-    #         # Call the function that builds the hotel webpage URLs and extract information
-    #         urls, dates = await self.build_url()
-            
-    #         for i in range(0, len(urls), batch_size):
-    #             batch_urls = urls[i:i+batch_size]
-    #             batch_dates = dates[i:i+batch_size]
-                
-    #             tasks = [self.fetch(session, url) for url in batch_urls]
-    #             html_pages = await asyncio.gather(*tasks)
-        
-    #             tasks = [self.extract_hotels_from_page(html, date) for html, date in zip(html_pages, batch_dates)]
-    #             batch_results = await asyncio.gather(*tasks)
-    #             hotels_list.extend(batch_results)
-    
-    #     # Concatenate into one large dataframe
-    #     all_best_hotels = pd.concat(hotels_list)
-        
-    #     # Drop duplicates
-    #     all_best_hotels = all_best_hotels.drop_duplicates(subset=['name', 'rating', 'reviews',
-    #                                                       'date_from', 'date_to'])
-
-    #     # If user inputs airport information, execute the flights search and calculate a total price
-    #     if (self.airport_from != None) & (self.airport_to != None):
-    #         flights_df = asyncio.run(self.kayak_flights_search())
-    #         if len(flights_df) > 0:    
-    #             all_best_hotels = all_best_hotels.merge(flights_df, on=['date_from', 'date_to'], how='left')
-    #             # Use dummy integer value in place of 'Missing' - needed for further calculations
-    #             all_best_hotels = all_best_hotels.replace('Missing', 99999)
-    #             all_best_hotels['approx_flight_price'] = all_best_hotels['approx_flight_price'].astype(int)
-    #             all_best_hotels['total_price'] = all_best_hotels['hotel_price'] + all_best_hotels['approx_flight_price']
-    #         else:
-    #             all_best_hotels = all_best_hotels.rename(columns={'date_from': 'checkin_date', 'date_to': 'checkout_date',
-    #                                                           'hotel_price': 'total_price'})
-    #     else:
-    #         all_best_hotels = all_best_hotels.rename(columns={'date_from': 'checkin_date', 'date_to': 'checkout_date',
-    #                                                           'hotel_price': 'total_price'})
-    
-    #     # Scale columns to be within a range of 0 and 1 - price is represented as the percentile value over all prices
-    #     all_best_hotels['price_percentile'] = stats.percentileofscore(all_best_hotels['total_price'], all_best_hotels['total_price'])*0.01
-    #     all_best_hotels['rating_scaled'] = all_best_hotels['rating']*0.1
-        
-    #     # Build VM (Value for Money) score
-    #     all_best_hotels['vm_score_unrounded'] = 100*(((1-all_best_hotels['price_percentile'])+all_best_hotels['rating_scaled'])/2)
-        
-    #     # Sort final results based on user input
-    #     if self.sort == 'Price & Rating':
-    #         all_best_hotels = all_best_hotels.sort_values(by='vm_score_unrounded', ascending=False)
-            
-    #     elif self.sort == 'Price':
-    #         all_best_hotels = all_best_hotels.sort_values(by='total_price', ascending=True)
-        
-    #     else:
-    #         all_best_hotels = all_best_hotels.sort_values(by='rating', ascending=False)
-    
-    #     # Apply rounding to VM score
-    #     all_best_hotels['vm_score'] = round(all_best_hotels['vm_score_unrounded'])
-    #     all_best_hotels['vm_score'] = all_best_hotels['vm_score'].astype(int)
-    
-    #     # Drop scaled columns
-    #     all_best_hotels.drop('price_percentile', axis=1, inplace=True)
-    #     all_best_hotels.drop('rating_scaled', axis=1, inplace=True)
-    #     all_best_hotels.drop('vm_score_unrounded', axis=1, inplace=True)
-
-    #     # If user inputs airport information, revert the dummy integer values implemented earlier,
-    #     # and rename and return appropriate columns
-    #     if (self.airport_from != None) & (self.airport_to != None):
-    #         if len(flights_df) > 0:
-    #             all_best_hotels['total_price'] = np.where(all_best_hotels['approx_flight_price'] == 99999,
-    #                                                       'Missing', all_best_hotels['total_price'])
-    #             all_best_hotels['approx_flight_price'] = np.where(all_best_hotels['approx_flight_price'] == 99999,
-    #                                                        'Missing', all_best_hotels['approx_flight_price'])
-                
-    #             all_best_hotels = all_best_hotels.rename(columns={'date_from': 'depart', 'date_to': 'return'})
-    #             all_best_hotels = all_best_hotels[['name', 'location', 'airport_from', 'airport_to', 'depart', 'return',
-    #                                                'rating', 'reviews', 'hotel_price', 'approx_flight_price', 'total_price',
-    #                                                'vm_score', 'hotel_link', 'flight_link']].copy()
-
-    #     # Return final results
-    #     return all_best_hotels
-    
-    
-    
     # Gathers all hotel information (and flight informtion if specified) and returns one large result dataframe
     async def booking_search(self):
         batch_size = self.batch_size
         hotels_list = []
     
+        # Build URLs and dates
         urls, dates = await self.build_url()
-        connector = aiohttp.TCPConnector(limit=90)
     
-        async with aiohttp.ClientSession(connector=connector) as session:
-            for i in range(0, len(urls), batch_size):
-                batch_urls = urls[i:i+batch_size]
-                batch_dates = dates[i:i+batch_size]
+        for i in range(0, len(urls), batch_size):
+            batch_urls = urls[i:i+batch_size]
+            batch_dates = dates[i:i+batch_size]
     
-                # Step 1: Submit job for each URL
-                job_tasks = [self.submit_job(session, url) for url in batch_urls]
-                jobs = await asyncio.gather(*job_tasks)
+            tasks = [self.extract_hotels_from_page_playwright(url, date)
+                     for url, date in zip(batch_urls, batch_dates)]
+            batch_results = await asyncio.gather(*tasks)
+            hotels_list.extend(batch_results)
     
-                # Step 2: Fetch results for each job ID
-                result_tasks = [
-                    self.fetch_result(session, job_id, url)
-                    for job_id, url in jobs if job_id
-                ]
-                html_pages = await asyncio.gather(*result_tasks)
-    
-                # Step 3: Extract hotels from HTML
-                tasks = [
-                    self.extract_hotels_from_page(html, date)
-                    for html, date in zip(html_pages, batch_dates) if html
-                ]
-                batch_results = await asyncio.gather(*tasks)
-                hotels_list.extend(batch_results)
+        # Combine all into one dataframe
+        all_best_hotels = pd.concat(hotels_list)
+        
+        # batch_size = self.batch_size
+        # hotels_list = []
+        
+        # # Using aiohttp wih a session vastly improves execution time
+        # connector = aiohttp.TCPConnector(limit=90)
+        # async with aiohttp.ClientSession(headers=HEADERS, connector=connector) as session:
+        #     # Call the function that builds the hotel webpage URLs and extract information
+        #     urls, dates = await self.build_url()
+            
+        #     for i in range(0, len(urls), batch_size):
+        #         batch_urls = urls[i:i+batch_size]
+        #         batch_dates = dates[i:i+batch_size]
+                
+        #         tasks = [self.fetch(session, url) for url in batch_urls]
+        #         html_pages = await asyncio.gather(*tasks)
+        
+        #         tasks = [self.extract_hotels_from_page(html, date) for html, date in zip(html_pages, batch_dates)]
+        #         batch_results = await asyncio.gather(*tasks)
+        #         hotels_list.extend(batch_results)
     
         # Concatenate into one large dataframe
         all_best_hotels = pd.concat(hotels_list)
@@ -604,3 +537,5 @@ class Booker:
 
         # Return final results
         return all_best_hotels
+    
+    
