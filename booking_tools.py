@@ -224,6 +224,7 @@ class Booker:
             page = await browser.new_page()
             await stealth_async(page)
             await page.goto(scraperapi_url, timeout=30000)
+            print(await page.inner_text('body'))
     
             hotel_cards = await page.locator('[data-testid="property-card"]').all()
             for card in hotel_cards:
