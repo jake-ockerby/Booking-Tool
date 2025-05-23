@@ -95,14 +95,14 @@ class Booker:
             "country_code": "uk"
         }
         async with semaphore:
-            # try:
-            async with session.post("https://async.scraperapi.com/jobs", json=payload, timeout=60) as response:
-                data = await response.json()
-                print(data)
-                return data["requestId"], url
-            # except Exception as e:
-            #     print(f"Error submitting job for {url}: {e}")
-            #     return None, url
+            try:
+                async with session.post("https://async.scraperapi.com/jobs", json=payload, timeout=60) as response:
+                    data = await response.json()
+                    # print(data)
+                    return data["id"], url
+            except Exception as e:
+                print(f"Error submitting job for {url}: {e}")
+                return None, url
     
     # Polls the result for a given job ID
     async def fetch_result(self, session, job_id, url):
