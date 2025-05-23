@@ -14,6 +14,7 @@ from datetime import date, datetime, timedelta
 import time
 import re
 import json
+import random
 from fuzzywuzzy import fuzz, process
 
 nest_asyncio.apply()  # Allows nested async loops (for Jupyter)
@@ -218,12 +219,36 @@ class Booker:
         scraperapi_url = self.build_scraperapi_url(url)
         hotels_data = {'name': [], 'location': [], 'date_from': [], 'date_to': [],
                        'hotel_price': [], 'rating': [], 'reviews': [], 'hotel_link': []}
-    
+        
         async with async_playwright() as p:
-            browser = await p.chromium.launch(headless=True)
-            page = await browser.new_page()
+            await asyncio.sleep(random.uniform(1, 3))
+            browser = await p.chromium.launch_persistent_context(
+                user_data_dir="./tmp-user-data",
+                headless=False,  # Headed is often less suspicious
+            )
+            context = await browser.new_context(
+                user_agent="Mozilla/5.0 (Windows NT 10.0; Win64; x64) AppleWebKit/537.36 (KHTML, like Gecko) Chrome/122.0.0.0 Safari/537.36",
+                viewport={"width": 1280, "height": 800}
+            )
+            await context.add_cookies([
+                {
+                    "name": "lastSeen",
+                    "value": "true",
+                    "domain": ".booking.com",
+                    "path": "/"
+                }
+            ])
+            page = await context.new_page()
+            await page.set_extra_http_headers({
+                "Accept-Language": "en-GB,en;q=0.9",
+            })
+            await page.set_user_agent(
+                "Mozilla/5.0 (Windows NT 10.0; Win64; x64) "
+                "AppleWebKit/537.36 (KHTML, like Gecko) "
+                "Chrome/124.0.0.0 Safari/537.36"
+            )
             await stealth_async(page)
-            await page.goto(scraperapi_url, timeout=30000)
+            await page.goto(scraperapi_url, wait_until="networkidle")
             print(await page.inner_text('body'))
     
             hotel_cards = await page.locator('[data-testid="property-card"]').all()
