@@ -92,7 +92,7 @@ class Booker:
             "apiKey": API_KEY,
             "urls": [url],
             "premium": True,
-            "render": True,
+            # "render": True,
             "country_code": "uk"
         }
         async with semaphore:
@@ -110,8 +110,8 @@ class Booker:
         result_url = f"https://async.scraperapi.com/jobs/{job_id}?apiKey={API_KEY}"
         # for _ in range(15):  # Try for up to 30 seconds
             # try:
-        async with session.get(result_url) as response:
-            text = await response.text()
+        async with session.get(result_url) as response_new:
+            text = await response_new.json()
             print(text)
             # if "<html" in text:  # Crude check for HTML
             return text
