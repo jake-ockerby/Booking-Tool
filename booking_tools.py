@@ -20,6 +20,7 @@ HEADERS = {'User-Agent': 'Mozilla/5.0 (X11; CrOS x86_64 8172.45.0) AppleWebKit/5
        'Accept-Language': 'en-US, en;q=0.5'
       }
 API_KEY = "1ecc066a30605371c68cb8f985a830c4"
+API_URL = "https://async.scraperapi.com/jobs"
 # proxies = {
 #   "https": "scraperapi.country_code=uk:1ecc066a30605371c68cb8f985a830c4@proxy-server.scraperapi.com:8001"
 # }
@@ -59,6 +60,7 @@ class Booker:
         self.clean_airport_names = clean_airport_names
         self.batch_size = 20
       
+    # https://www.booking.com/searchresults.en-gb.html?ss=Antalya&checkin=2025-06-02&checkout=2025-06-03&group_adults=2&group_children=0&no_rooms=1&order=price&nflt=ht_id%3D204%3Breview_score%3D60%3BGBP-0-10000-1
     # def build_scraperapi_url(self, target_url, country_code="uk"):
     #     return f"http://api.scraperapi.com?api_key={API_KEY}&url={quote(target_url)}&premium=true&country_code={country_code}"
 
@@ -67,7 +69,15 @@ class Booker:
         # scraperapi_url = self.build_scraperapi_url(url)
         async with semaphore:
             # try:
-            async with session.get(url, timeout=60) as response:
+            payload = {
+                'apiKey': API_KEY,
+                'urls': [url],
+                'apiParams': {
+                    'country_code': 'uk',
+                    'premium': True
+                }
+            }
+            async with session.post(API_URL, json=payload, timeout=30) as response:
                 return await response.text()
             # except Exception as e:
             #     print(f"Error fetching {url}: {e}")
