@@ -107,21 +107,24 @@ class Booker:
                 return None, url
     
     # Polls the result for a given job ID
-    async def fetch_result(self, session, job_id, url):
+    async def fetch_result(self, session, job_id, url, max_retries=15, delay=2):
         result_url = f"https://async.scraperapi.com/jobs/{job_id}?apiKey={API_KEY}"
-        # for _ in range(15):  # Try for up to 30 seconds
-            # try:
-        async with session.get(result_url) as response_new:
-            raw_text = await response_new.text()
-            text = json.loads(raw_text)
-            print(text)
-            # if "<html" in text:  # Crude check for HTML
-            return text
-            # except:
-            #     pass
-        #     await asyncio.sleep(2)
-        # print(f"Failed to fetch result for {url}")
-        # return None
+        
+        for _ in range(max_retries):
+            async with session.get(result_url) as response:
+                raw = await response.read()
+    
+                try:
+                    json_data = json.loads(raw)
+                    if isinstance(json_data, dict) and json_data.get("status") != "succeeded":
+                        await asyncio.sleep(delay)
+                        continue
+                except json.JSONDecodeError:
+                    # If it’s not JSON, it’s probably the final HTML
+                    return raw.decode("utf-8")
+
+        print(f"Job {job_id} did not complete in time.")
+        return None
 
     # Builds the booking.com URL
     async def build_url(self):
@@ -212,7 +215,7 @@ class Booker:
 
         # Using BeautifulSoup to extract all hotel cards
         page = BeautifulSoup(html, 'lxml') 
-        # print(page.text)
+        print(page.text)
         hotels = page.findAll('div', {'data-testid': 'property-card'})
         links = page.findAll('a', {'data-testid': 'availability-cta-btn'}, href=True)
         locations = page.findAll('span', {'data-testid': 'address'})
