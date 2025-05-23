@@ -89,7 +89,7 @@ class Booker:
     # Submits a scraping job and returns the job ID
     async def submit_job(self, session, url):
         payload = {
-            "apiKey": self.api_key,
+            "apiKey": API_KEY,
             "urls": [url],
             "premium": True,
             "country_code": "uk"
