@@ -99,7 +99,7 @@ class Booker:
                 async with session.post("https://async.scraperapi.com/jobs", json=payload, timeout=60) as response:
                     data = await response.json()
                     # print(data)
-                    return data["id"], url
+                    return data[0]["id"], url
             except Exception as e:
                 print(f"Error submitting job for {url}: {e}")
                 return None, url
