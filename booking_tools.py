@@ -74,15 +74,15 @@ class Booker:
         self.batch_size = 20
       
     # https://www.booking.com/searchresults.en-gb.html?ss=Antalya&checkin=2025-06-02&checkout=2025-06-03&group_adults=2&group_children=0&no_rooms=1&order=price&nflt=ht_id%3D204%3Breview_score%3D60%3BGBP-0-10000-1
-    def build_scraperapi_url(self, target_url, country_code="uk"):
-        return f"http://api.scraperapi.com?api_key={API_KEY}&url={quote(target_url)}&premium=true&keep_headers=true&country_code={country_code}"
+    # def build_scraperapi_url(self, target_url, country_code="uk"):
+    #     return f"http://api.scraperapi.com?api_key={API_KEY}&url={quote(target_url)}&premium=true&keep_headers=true&country_code={country_code}"
 
     # Asynchronous fetch
     async def fetch(self, session, url):
-        scraperapi_url = self.build_scraperapi_url(url)
+        # scraperapi_url = self.build_scraperapi_url(url)
         async with semaphore:
             try:
-                async with session.get(scraperapi_url, timeout=60) as response:
+                async with session.get(url, timeout=60) as response:
                     return await response.text()
             except Exception as e:
                 print(f"Error fetching {url}: {e}")
@@ -161,7 +161,7 @@ class Booker:
                     "nflt": f"ht_id=204;review_score={self.review_score}" + mealplan_str + twin_str + stars_str + distance_str + pricerange_str
                 }
                 url = f"{base_url}?{urlencode(query)}"
-                print(url)
+                # print(url)
 
                 # Append each URL and set of dates to lists
                 urls.append(url)
@@ -178,7 +178,7 @@ class Booker:
 
         # Using BeautifulSoup to extract all hotel cards
         page = BeautifulSoup(html, 'lxml') 
-        print(page.text)
+        # print(page.text)
         hotels = page.findAll('div', {'data-testid': 'property-card'})
         links = page.findAll('a', {'data-testid': 'availability-cta-btn'}, href=True)
         locations = page.findAll('span', {'data-testid': 'address'})
@@ -467,43 +467,43 @@ class Booker:
     
     # Gathers all hotel information (and flight informtion if specified) and returns one large result dataframe
     async def booking_search(self):
-        batch_size = self.batch_size
-        hotels_list = []
-    
-        # Build URLs and dates
-        urls, dates = await self.build_url()
-    
-        for i in range(0, len(urls), batch_size):
-            batch_urls = urls[i:i+batch_size]
-            batch_dates = dates[i:i+batch_size]
-    
-            tasks = [self.extract_hotels_from_page_playwright(url, date)
-                     for url, date in zip(batch_urls, batch_dates)]
-            batch_results = await asyncio.gather(*tasks)
-            hotels_list.extend(batch_results)
-    
-        # Combine all into one dataframe
-        all_best_hotels = pd.concat(hotels_list)
-        
         # batch_size = self.batch_size
         # hotels_list = []
+    
+        # # Build URLs and dates
+        # urls, dates = await self.build_url()
+    
+        # for i in range(0, len(urls), batch_size):
+        #     batch_urls = urls[i:i+batch_size]
+        #     batch_dates = dates[i:i+batch_size]
+    
+        #     tasks = [self.extract_hotels_from_page_playwright(url, date)
+        #              for url, date in zip(batch_urls, batch_dates)]
+        #     batch_results = await asyncio.gather(*tasks)
+        #     hotels_list.extend(batch_results)
+    
+        # # Combine all into one dataframe
+        # all_best_hotels = pd.concat(hotels_list)
         
-        # # Using aiohttp wih a session vastly improves execution time
-        # connector = aiohttp.TCPConnector(limit=90)
-        # async with aiohttp.ClientSession(headers=HEADERS, connector=connector) as session:
-        #     # Call the function that builds the hotel webpage URLs and extract information
-        #     urls, dates = await self.build_url()
+        batch_size = self.batch_size
+        hotels_list = []
+        
+        # Using aiohttp wih a session vastly improves execution time
+        connector = aiohttp.TCPConnector(limit=90)
+        async with aiohttp.ClientSession(headers=HEADERS, connector=connector) as session:
+            # Call the function that builds the hotel webpage URLs and extract information
+            urls, dates = await self.build_url()
             
-        #     for i in range(0, len(urls), batch_size):
-        #         batch_urls = urls[i:i+batch_size]
-        #         batch_dates = dates[i:i+batch_size]
+            for i in range(0, len(urls), batch_size):
+                batch_urls = urls[i:i+batch_size]
+                batch_dates = dates[i:i+batch_size]
                 
-        #         tasks = [self.fetch(session, url) for url in batch_urls]
-        #         html_pages = await asyncio.gather(*tasks)
+                tasks = [self.fetch(session, url) for url in batch_urls]
+                html_pages = await asyncio.gather(*tasks)
         
-        #         tasks = [self.extract_hotels_from_page(html, date) for html, date in zip(html_pages, batch_dates)]
-        #         batch_results = await asyncio.gather(*tasks)
-        #         hotels_list.extend(batch_results)
+                tasks = [self.extract_hotels_from_page(html, date) for html, date in zip(html_pages, batch_dates)]
+                batch_results = await asyncio.gather(*tasks)
+                hotels_list.extend(batch_results)
     
         # Concatenate into one large dataframe
         all_best_hotels = pd.concat(hotels_list)
