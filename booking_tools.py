@@ -111,6 +111,7 @@ class Booker:
             # try:
         async with session.get(result_url) as response:
             text = await response.text()
+            print(text)
             # if "<html" in text:  # Crude check for HTML
             return text
             # except:
