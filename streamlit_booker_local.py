@@ -3,28 +3,55 @@
 import streamlit as st
 import pandas as pd
 from datetime import date, timedelta
-import sqlite3
+from booking_tools import Booker
 import io
+import asyncio
+import nest_asyncio
+from concurrent.futures import ThreadPoolExecutor
 today = date.today()
+nest_asyncio.apply()
 
 # Cache to prevent computation on every rerun
 @st.cache_data
 def convert_df(df):
     output = io.BytesIO()
-    writer = pd.ExcelWriter(output, engine="xlsxwriter",
-                            engine_kwargs={'options': {'strings_to_urls': False}})
+    writer = pd.ExcelWriter(output, engine="xlsxwriter")
     
     df = df.copy()
     if "hotel_link" in df.columns:
         df["hotel_link"] = df["hotel_link"].astype(str)
+    if "flight_link" in df.columns:
+        df["flight_link"] = df["flight_link"].astype(str)
     
     df.to_excel(writer, index=False)
     writer.close()
     data_bytes = output.getvalue()
     return data_bytes
 
-cities = pd.read_csv('citynames.csv')
-cities_tuple = tuple(cities['Full Name'])
+# Needed to use async properly in streamlit
+def run_async_in_thread(async_func, *args, **kwargs):
+    def _run():
+        loop = asyncio.new_event_loop()
+        asyncio.set_event_loop(loop)
+        return loop.run_until_complete(async_func(*args, **kwargs))
+
+    with ThreadPoolExecutor() as executor:
+        return executor.submit(_run).result()
+
+
+# Read airport names
+iata_table = pd.read_csv('airports.csv')
+iata_table = iata_table.rename(columns={'Airport name': 'name', 'IATA': 'code'})
+iata_table = iata_table[['name']].copy()
+
+city_codes = pd.read_csv('citycodes.csv')
+city_codes = city_codes[['name']].copy()
+city_codes['name'] = city_codes['name'].apply(lambda x: x.split(' Metropolitan Area')[0])
+
+# Combine the two dataframes
+code_table = pd.concat([iata_table, city_codes])
+airports_tuple = tuple(code_table['name'])
+
 
 st.set_page_config(page_title="Hotels & Flights Search Tool", layout="centered")
 
@@ -118,8 +145,13 @@ st.divider()
 
 # ----------- Location & Airports ------------
 st.markdown("### Location & Airports")
-# location = st.text_input("Hotel Location:", None)
-location = st.selectbox("Hotel Location:", cities_tuple, index=None)
+col1, col2, col3 = st.columns([2, 1.5, 1.5])
+with col1:
+    location = st.text_input("Hotel Location:", None)
+with col2:
+    airport_from = st.selectbox("From Airport:", airports_tuple, index=None)
+with col3:
+    airport_to = st.selectbox("To Airport:", airports_tuple, index=None)
 
 st.divider()
 
@@ -127,9 +159,20 @@ st.divider()
 st.markdown("### Travel Window")
 col4, col5 = st.columns(2)
 with col4:
-    from_ = st.date_input("From:", today, min_value=today, max_value=today + timedelta(days=182))
+    from_ = st.date_input("From:", today, min_value=today, max_value=today + timedelta(days=540))
 with col5:
-    to_ = st.date_input("To:", from_ + timedelta(days=2), min_value=from_ + timedelta(days=2))
+    to_ = st.date_input("To:", from_ + timedelta(days=2),
+                        min_value=from_ + timedelta(days=2), max_value=from_ + timedelta(days=90))
+
+# ----------- People & Rooms ------------
+st.markdown("### People & Rooms")
+col6, col7, col8 = st.columns(3)
+with col6:
+    adults = st.number_input("Adults:", min_value=1, max_value=8)
+with col7:
+    children = st.number_input("Children:", min_value=0, max_value=8)
+with col8:
+    rooms = st.number_input("Rooms:", min_value=1, max_value=8)
 
 # ----------- Holiday Length ------------
 st.markdown("### Holiday Duration")
@@ -148,107 +191,62 @@ with st.expander("Click to add filters"):
     st.markdown("#### Sort Options")
     sort = st.selectbox("Sort By:", ("Price", "Rating", "Price & Rating"))
 
-    review_score = st.number_input("Min. Review Rating:", min_value=6, max_value=9)
+    col11, col12 = st.columns(2)
+    with col11:
+        review_score = st.number_input("Min. Review Rating:", min_value=6, max_value=9)
+    with col12:
+        stars = st.number_input("Star Rating:", min_value=0, max_value=5)
+
+    st.markdown("#### Meal & Bed Options")
+    mealplan = st.selectbox("Meals Included:", ("Not Arsed", "Breakfast", "Breakfast & Dinner", "All-Inclusive"))
+    twin_beds = st.selectbox("Beds:", ("Not Arsed", "Twin Beds", "Double Bed"))
+
+    st.markdown("#### Distance From Centre")
+    distance = st.selectbox("Distance:", ("Not Arsed", "Half-Mile", "1 Mile", "2 Miles"))
 
 st.divider()
 
 # ----------- Search Button ------------
 if st.button("Search", type="primary"):
+    # Pass variables to class
+    booker = Booker(location, from_, to_, adults, children, rooms, sort, holiday_length,
+                    airport_from, airport_to, review_score, mealplan, twin_beds, stars,
+                    distance, price_range=[min_price, max_price], clean_airport_names=False)
+    
     # If hotel location is non-empty, run the full booking search
     if location:
         with st.spinner("Bear with me ...", show_time=True):
-            try:
-                with sqlite3.connect("travel.db") as conn:
-                    print(f"Opened SQLite database with version {sqlite3.sqlite_version} successfully.")
-
-            except:
-                st.write("Failed to open database")
-                
-            query = f"""SELECT *
-                        FROM hotels
-                        WHERE city = '{location}'
-                        AND checkin_date >= '{from_}'
-                        AND checkin_date <= '{to_}'
-                        AND approx_price BETWEEN {min_price} AND {max_price}
-                        AND rating >= {review_score}
-                        
-                        ORDER BY name, checkin_date
-                        """
-            result_df = pd.read_sql(query, con=conn)
-            result_df['checkin_date'] = pd.to_datetime(result_df['checkin_date']).dt.date
-            result_df['checkout_date'] = pd.to_datetime(result_df['checkout_date']).dt.date
-            # print(result_df)
-            conn.close()
-            
-            hotel_names = list(result_df['name'].unique())
-            final_results = []
-            for name in hotel_names:
-                print(name)
-                hotel_df = result_df[result_df['name'] == name].copy()
-                # print(hotel_df[['checkin_date', 'checkout_date']])
-                first_day = list(hotel_df['checkin_date'])[0]
-                last_day = list(hotel_df['checkin_date'])[-1]
-                window = (last_day - first_day).days - holiday_length + 1
-                if window >= 1:
-                    for i in range(window):
-                        checkin = first_day + timedelta(days=i)
-                        checkout = checkin + timedelta(days=holiday_length)
-                        # # Convert back to string
-                        # checkin = checkin_date.strftime("%Y-%m-%d")
-                        # checkout = checkout_date.strftime("%Y-%m-%d")
-                        
-                        holiday = hotel_df[(hotel_df['checkin_date'] >= checkin) & (hotel_df['checkin_date'] <= checkout)].copy()
-                        # print(holiday[['checkin_date', 'checkout_date']])
-                        weeks = int(holiday_length/7) + 1
-                        weekly_results = []
-                        for j in range(weeks):
-                            week_end = checkin + timedelta(days=(j+1)*7)
-                            week_result = holiday[holiday['checkout_date'] == week_end].copy()
-                            # if name == 'Eleven Didsbury Park Hotel':
-                            # print(hotel_df[['checkin_date', 'checkout_date']])
-                            # print(week_end)
-                            # print(len(week_result))
-                            # print('\n')
-                            if week_end > checkout:
-                                days_over = (week_end - checkout).days
-                                week_result['approx_price'] = week_result['approx_price']*((7-days_over)/holiday_length)
-                            else:
-                                week_result['approx_price'] = week_result['approx_price']*(7/holiday_length)
-                                
-                            weekly_results.append(week_result)
-                       
-                        check_missing = [len(x) for x in weekly_results]
-                        if len(check_missing) == 1:
-                            check_missing.append(0)
-                            
-                        if 0 not in check_missing[:-1]:
-                            weekly_df = pd.concat(weekly_results)
-                            # if (i == 0) & (name == 'Airport Hotel Manchester'):
-                                # print(weekly_df)
-                        
-                            avg_price = round(sum(weekly_df['approx_price']), 2)
-                            holiday_result = weekly_df.iloc[[0]].copy()
-                            holiday_result['checkin_date'] = checkin.strftime("%Y-%m-%d")
-                            holiday_result['checkout_date'] = checkout.strftime("%Y-%m-%d")
-                            holiday_result['approx_price'] = avg_price
-                            final_results.append(holiday_result)
-                    
-            final_result_df = pd.concat(final_results)
-                    
-                    
-                
-            
+            result_df = run_async_in_thread(booker.booking_search)
         st.success("Search complete!")
+        # st.write(result_df)
 
         column_config = {
-        "hotel_link": st.column_config.LinkColumn("hotel_link", display_text="Hotel Link")
+            "hotel_link": st.column_config.LinkColumn("hotel_link", display_text="Hotel Link"),
+            "flight_link": st.column_config.LinkColumn("flight_link", display_text="Flight Link")
         }
-        st.dataframe(final_result_df, column_config=column_config, hide_index=True)
+        st.dataframe(result_df, column_config=column_config, hide_index=True)
 
-        excel = convert_df(final_result_df)
+        excel = convert_df(result_df)
         st.download_button("Download Results", data=excel, file_name="search_results.xlsx", type="primary")
+
+    # If both airport destinations are non-empty, run the flights search
+    elif airport_from and airport_to:
+        with st.spinner("Bear with me ...", show_time=True):
+            result_df = run_async_in_thread(booker.kayak_flights_search)
+        if result_df.empty:
+            st.error("Failed to gather flight information - please try again.")
+        else:
+            st.success("Flight search complete!")
+            column_config = {
+                "hotel_link": st.column_config.LinkColumn("hotel_link", display_text="Hotel Link"),
+                "flight_link": st.column_config.LinkColumn("flight_link", display_text="Flight Link")
+            }
+            st.dataframe(result_df, column_config=column_config, hide_index=True)
+
+            excel = convert_df(result_df)
+            st.download_button("Download Results", data=excel, file_name="search_results.xlsx", type="primary")
 
     # Else display a warning
     else:
-        st.warning("Please enter a destination")
+        st.warning("Please enter a hotel location or a valid pair of airports.")
             

@@ -188,6 +188,7 @@ class Booker:
         for hotel, a, loc in zip(hotels, links, locations):
             try:
                 name = hotel.split('Opens in new window')[0].strip()
+                name = name.split('it matches your search criteria.')[-1]
                 link = a['href']
                 location = ', '.join(loc)
                 rating = float(hotel.split('Scored')[1][:4].strip())
