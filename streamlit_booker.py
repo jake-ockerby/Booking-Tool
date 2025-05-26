@@ -2,6 +2,7 @@
 
 import streamlit as st
 import pandas as pd
+from scipy import stats
 from datetime import date, timedelta
 import sqlite3
 import io
@@ -234,10 +235,34 @@ if st.button("Search", type="primary"):
                             final_results.append(holiday_result)
                     
             final_result_df = pd.concat(final_results)
-                    
-                    
-                
             
+            # Scale columns to be within a range of 0 and 1 - price is represented as the percentile value over all prices
+            final_result_df['price_percentile'] = stats.percentileofscore(final_result_df['approx_price'], final_result_df['approx_price'])*0.01
+            final_result_df['rating_scaled'] = final_result_df['rating']*0.1
+            
+            # Build VM (Value for Money) score
+            final_result_df['vm_score_unrounded'] = 100*(((1-final_result_df['price_percentile'])+final_result_df['rating_scaled'])/2)
+            
+            # Sort final results based on user input
+            if sort == 'Price & Rating':
+                final_result_df = final_result_df.sort_values(by='vm_score_unrounded', ascending=False)
+                
+            elif sort == 'Price':
+                final_result_df = final_result_df.sort_values(by='approx_price', ascending=True)
+            
+            else:
+                final_result_df = final_result_df.sort_values(by='rating', ascending=False)
+        
+            # Apply rounding to VM score
+            final_result_df['vm_score'] = round(final_result_df['vm_score_unrounded'])
+            final_result_df['vm_score'] = final_result_df['vm_score'].astype(int)
+        
+            # Drop scaled columns
+            final_result_df.drop('price_percentile', axis=1, inplace=True)
+            final_result_df.drop('rating_scaled', axis=1, inplace=True)
+            final_result_df.drop('vm_score_unrounded', axis=1, inplace=True)
+                    
+                    
         st.success("Search complete!")
 
         column_config = {
