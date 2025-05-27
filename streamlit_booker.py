@@ -46,53 +46,39 @@ with st.expander("Instructions"):
     will then search from 1st - 8th July, 2nd - 9th July, 3rd - 10th July, ... all the way up until the 31st
     August. The long list of results can then be downloaded to excel.
     
-    - Searches may take a few minutes and will take longer for larger windows — so please be patient.
     - Some filters (like review scores or stars) may limit available results.
-    - The flight search is a bit temperamental and sometimes fails to gather flight data. Trying again should
-    fix this.
-    - Selecting Price & Rating in the sort options will result in a deeper, longer search, and will sort using
-    the VM (Value for Money) Score. Here, the best possible score is 100 and the worst possible score is 0.
+    - Price & Rating will sort using the VM (Value for Money) Score. Here, the best possible score is 100
+      and the worst possible score is 0.
     """)
     
-    st.markdown("### 1. Enter a Hotel Location or Airport Information")
+    st.markdown("### 1. Enter a Hotel Location")
     st.write("""
-    - **Hotel Location**: Type the name of the city or area where you want to find a hotel.
-    - **From Airport**: Select your departure airport.
-    - **To Airport**: Select your destination airport.
-    
-    **Note**: Only return flights are searched.""")
+    **Hotel Location**: Type the name of the city where you want to find a hotel.
+    - **Note**: There are 115 cities to select from across Europe (including Turkey).
+    More cities may be included in future.
+    """)
 
     st.markdown("### 2. Choose Your Travel Window")
     st.write("""
     - Select your **start date** & **end date** for the search window — this window must span 2 days at minimum,
-    and 90 days at maximum.
+      and 182 at maximum.
     """)
 
-    st.markdown("### 3. Specify Group and Accommodation")
-    st.write("""
-    - Number of **adults** (1–8)
-    - Number of **children** (0–8)
-    - Number of **rooms** (1–8)
-    """)
 
-    st.markdown("### 4. Set Holiday Duration")
+    st.markdown("### 3. Set Holiday Duration")
     st.write("""
     - Use the slider to pick how many days you want the holiday to last (up to 30 days).
     """)
 
-    st.markdown("### 5. (Optional) Add Filters")
+    st.markdown("### 4. (Optional) Add Filters")
     st.write("""
     Expand the 'Additional Filters' section to refine your search:
     - **Price Range**: Minimum and maximum nightly hotel price
-    - **Sort Results**: By Price, Rating, or Price & Rating
     - **Minimum Review Rating**: (6–9)
-    - **Star Rating**: (0–5, 0 is set by default and disables this filter)
-    - **Meal Options**: e.g. Breakfast or All-Inclusive
-    - **Bed Type**: e.g. Twin or Double
-    - **Distance from Centre**: Within 0.5 to 2 miles
+    - **Sort Results**: By Price, Rating, or Price & Rating
     """)
 
-    st.markdown("### 6. Search")
+    st.markdown("### 5. Search")
     st.write("""
     - Click the **Search** button.
     - The app will either:
@@ -103,11 +89,10 @@ with st.expander("Instructions"):
         - Show a **warning** if neither is provided.
     """)
 
-    st.markdown("### 7. View and Download Results")
+    st.markdown("### 6. View and Download Results")
     st.write("""
-    - After the search completes, you’ll see a table of results with links to:
-        - **Hotel pages** (Booking.com)
-        - **Flight bookings** (Kayak)
+    - After the search completes, you’ll see a table of results with links to **hotel pages** (Booking.com)
+    - Prices shown are per person per night, and are approximates only.
     - Click **Download Results** to save the data as an Excel spreadsheet.
     """)
     
@@ -187,6 +172,8 @@ if st.button("Search", type="primary"):
             final_results = []
             for name in hotel_names:
                 hotel_df = result_df[result_df['name'] == name].copy()
+                print(name)
+                print(hotel_df['approx_price'].head(1))
                 first_day = list(hotel_df['checkin_date'])[0]
                 last_day = list(hotel_df['checkin_date'])[-1]
                 window = (last_day - first_day).days - holiday_length + 1
@@ -200,11 +187,12 @@ if st.button("Search", type="primary"):
                         for j in range(weeks):
                             week_end = checkin + timedelta(days=(j+1)*7)
                             week_result = holiday[holiday['checkout_date'] == week_end].copy()
-                            if week_end > checkout:
-                                days_over = (week_end - checkout).days
-                                week_result['approx_price'] = week_result['approx_price']*((7-days_over)/holiday_length)
-                            else:
-                                week_result['approx_price'] = week_result['approx_price']*(7/holiday_length)
+                            if weeks != 1:
+                                if week_end > checkout:
+                                    days_over = (week_end - checkout).days
+                                    week_result['approx_price'] = week_result['approx_price']*((7-days_over)/holiday_length)
+                                else:
+                                    week_result['approx_price'] = week_result['approx_price']*(7/holiday_length)
                                 
                             weekly_results.append(week_result)
                        
