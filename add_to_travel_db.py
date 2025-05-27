@@ -24,7 +24,7 @@ cursor = conn.cursor()
 
 today = date.today().strftime("%Y-%m-%d")
 end_date = (date.today() + timedelta(days=212)).strftime("%Y-%m-%d")
-for city in [cities_list[4]]:
+for city in cities_list[:5]:
     start_time = time.time()
     print(city)
     booker = Booker(location=city, from_=today, to_=end_date, adults=2, children=0,
@@ -33,14 +33,7 @@ for city in [cities_list[4]]:
     
     hotels_df = asyncio.run(booker.booking_search())
     hotels_df['city'] = city
-    hotels_df = hotels_df.set_index('city')
-    if 'Athens' in city:
-        athenian_spirit = hotels_df[hotels_df['name'] == 'Athenian Spirit']
-        helpme = athenian_spirit[['total_price', 'text']].copy().head(25)
-        print(helpme['text'].values[0])
-        # helpme.to_csv('helpme.csv')
-        # print(helpme)
-        
+    hotels_df = hotels_df.set_index('city') 
     hotels_df['total_price'] = hotels_df['total_price']/14
     hotels_df = hotels_df.rename(columns={'total_price': 'approx_price'})
     hotels_df.to_sql(name='hotels', con=conn, if_exists='append')

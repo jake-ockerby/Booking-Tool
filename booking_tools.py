@@ -71,7 +71,7 @@ class Booker:
         self.price_min = price_range[0]
         self.price_max = price_range[1]
         self.clean_airport_names = clean_airport_names
-        self.batch_size = 20
+        self.batch_size = 90
       
     # https://www.booking.com/searchresults.en-gb.html?ss=Antalya&checkin=2025-06-02&checkout=2025-06-03&group_adults=2&group_children=0&no_rooms=1&order=price&nflt=ht_id%3D204%3Breview_score%3D60%3BGBP-0-10000-1
     # def build_scraperapi_url(self, target_url, country_code="uk"):
