@@ -37,7 +37,7 @@ API_KEY = "1ecc066a30605371c68cb8f985a830c4"
 # proxies = {
 #   "https": "scraperapi.country_code=uk:1ecc066a30605371c68cb8f985a830c4@proxy-server.scraperapi.com:8001"
 # }
-semaphore = asyncio.Semaphore(90)
+semaphore = asyncio.Semaphore(180)
 
 class Booker:
     def __init__(self, location, from_, to_, adults, children, rooms, sort, holiday_length, airport_from=None,
@@ -71,7 +71,7 @@ class Booker:
         self.price_min = price_range[0]
         self.price_max = price_range[1]
         self.clean_airport_names = clean_airport_names
-        self.batch_size = 90
+        self.batch_size = 180
       
     # https://www.booking.com/searchresults.en-gb.html?ss=Antalya&checkin=2025-06-02&checkout=2025-06-03&group_adults=2&group_children=0&no_rooms=1&order=price&nflt=ht_id%3D204%3Breview_score%3D60%3BGBP-0-10000-1
     # def build_scraperapi_url(self, target_url, country_code="uk"):
@@ -172,7 +172,7 @@ class Booker:
         return urls, dates
 
     # Extracts the text from each hotel card displayed on the webpage
-    async def extract_hotels_from_page(self, url, html, date):
+    async def extract_hotels_from_page(self, html, date):
         # Store information gathered in a dictionary
         hotels_data = {'name': [], 'location': [], 'date_from': [], 'date_to': [], 'url': [],
                        'hotel_price': [], 'rating': [], 'reviews': [], 'hotel_link': [], 'text': []}
@@ -204,12 +204,10 @@ class Booker:
                 hotels_data['location'].append(location)
                 hotels_data['date_from'].append(date[0])
                 hotels_data['date_to'].append(date[1])
-                hotels_data['url'].append(url)
                 hotels_data['hotel_link'].append(link)
                 hotels_data['hotel_price'].append(price)
                 hotels_data['rating'].append(rating)
                 hotels_data['reviews'].append(review)
-                hotels_data['text'].append(hotel)
             except:
                 continue
 
@@ -471,29 +469,11 @@ class Booker:
     
     # Gathers all hotel information (and flight informtion if specified) and returns one large result dataframe
     async def booking_search(self):
-        # batch_size = self.batch_size
-        # hotels_list = []
-    
-        # # Build URLs and dates
-        # urls, dates = await self.build_url()
-    
-        # for i in range(0, len(urls), batch_size):
-        #     batch_urls = urls[i:i+batch_size]
-        #     batch_dates = dates[i:i+batch_size]
-    
-        #     tasks = [self.extract_hotels_from_page_playwright(url, date)
-        #              for url, date in zip(batch_urls, batch_dates)]
-        #     batch_results = await asyncio.gather(*tasks)
-        #     hotels_list.extend(batch_results)
-    
-        # # Combine all into one dataframe
-        # all_best_hotels = pd.concat(hotels_list)
-        
         batch_size = self.batch_size
         hotels_list = []
         
         # Using aiohttp wih a session vastly improves execution time
-        connector = aiohttp.TCPConnector(limit=90)
+        connector = aiohttp.TCPConnector(limit=180)
         async with aiohttp.ClientSession(headers=HEADERS, connector=connector) as session:
             # Call the function that builds the hotel webpage URLs and extract information
             urls, dates = await self.build_url()
@@ -505,7 +485,7 @@ class Booker:
                 tasks = [self.fetch(session, url) for url in batch_urls]
                 html_pages = await asyncio.gather(*tasks)
         
-                tasks = [self.extract_hotels_from_page(url, html, date) for url, html, date in zip(batch_urls, html_pages, batch_dates)]
+                tasks = [self.extract_hotels_from_page(html, date) for html, date in zip(html_pages, batch_dates)]
                 batch_results = await asyncio.gather(*tasks)
                 hotels_list.extend(batch_results)
     
