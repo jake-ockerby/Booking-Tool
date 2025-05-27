@@ -174,8 +174,8 @@ class Booker:
     # Extracts the text from each hotel card displayed on the webpage
     async def extract_hotels_from_page(self, html, date):
         # Store information gathered in a dictionary
-        hotels_data = {'name': [], 'location': [], 'date_from': [], 'date_to': [], 'url': [],
-                       'hotel_price': [], 'rating': [], 'reviews': [], 'hotel_link': [], 'text': []}
+        hotels_data = {'name': [], 'location': [], 'date_from': [], 'date_to': [],
+                       'hotel_price': [], 'rating': [], 'reviews': [], 'hotel_link': []}
 
         # Using BeautifulSoup to extract all hotel cards
         page = BeautifulSoup(html, 'lxml') 

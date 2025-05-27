@@ -25,7 +25,13 @@ def convert_df(df):
     return data_bytes
 
 cities = pd.read_csv('citynames.csv')
-cities_tuple = tuple(cities['Full Name'])
+cities_list = sorted(list(cities['Full Name']))
+exclude = ['Andorra', 'San Marino', 'Monaco', 'Jersey', 'Guernsey', 'Isle of Man',
+           'Liechtenstein', 'Sector 3', 'Syria', 'Luxembourg', 'Cyprus']
+for item in exclude:
+    cities_list = [city for city in cities_list if item not in city ]
+    
+cities_tuple = tuple(cities_list)
 
 st.set_page_config(page_title="Cheeky Booker", layout="centered")
 
