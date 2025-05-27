@@ -240,10 +240,10 @@ if st.button("Search", type="primary"):
                             
                             holiday_result['checkin_date'] = checkin_str
                             holiday_result['checkout_date'] = checkout_str
-                            holiday_result['hotel_link'] = holiday_result['hotel_link']\
-                            .replace("checkin={0}&checkout={1}".format(checkin_orig, checkout_orig),
+                            holiday_result['hotel_link'] = holiday_result['hotel_link'].apply(lambda x:\
+                            x.replace("checkin={0}&checkout={1}".format(checkin_orig, checkout_orig),
                                     "checkin={0}&checkout={1}".format(checkin_str, checkout_str)
-                                    )
+                                    ))
                             holiday_result['approx_price'] = avg_price
                             print(holiday_result['hotel_link'].values[0])
                             print('\n')
