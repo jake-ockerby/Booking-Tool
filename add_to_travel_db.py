@@ -6,8 +6,11 @@ from datetime import date, timedelta
 from booking_tools import Booker
 
 cities = pd.read_csv('citynames.csv')
-cities_list = list(cities['Full Name'])
-
+cities_list = sorted(list(cities['Full Name']))
+exclude = ['Andorra', 'San Marino', 'Monaco', 'Jersey', 'Guernsey', 'Isle of Man',
+           'Liechtenstein', 'Sector 3', 'Syria', 'Luxembourg', 'Cyprus']
+for item in exclude:
+    cities_list = [city for city in cities_list if item not in city ]
 
 try:
     with sqlite3.connect("travel.db") as conn:
@@ -33,12 +36,12 @@ for city in cities_list[:5]:
     hotels_df = hotels_df.set_index('city')
     hotels_df['total_price'] = hotels_df['total_price']/14
     hotels_df = hotels_df.rename(columns={'total_price': 'approx_price'})
-    hotels_df.to_sql(name='hotels', con=conn, if_exists='replace')
+    hotels_df.to_sql(name='hotels', con=conn, if_exists='append')
     end_time = time.time()
     print('Execution Time: '+ str(round(end_time - start_time)) + 's\n')
 
 
-#df = pd.read_sql("SELECT * FROM hotels", conn)
+# df = pd.read_sql("SELECT * FROM hotels", conn)
 conn.commit()
 cursor.close()
 conn.close()

@@ -37,7 +37,7 @@ API_KEY = "1ecc066a30605371c68cb8f985a830c4"
 # proxies = {
 #   "https": "scraperapi.country_code=uk:1ecc066a30605371c68cb8f985a830c4@proxy-server.scraperapi.com:8001"
 # }
-semaphore = asyncio.Semaphore(5)
+semaphore = asyncio.Semaphore(20)
 
 class Booker:
     def __init__(self, location, from_, to_, adults, children, rooms, sort, holiday_length, airport_from=None,
