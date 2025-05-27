@@ -171,9 +171,9 @@ class Booker:
         return urls, dates
 
     # Extracts the text from each hotel card displayed on the webpage
-    async def extract_hotels_from_page(self, html, date):
+    async def extract_hotels_from_page(self, url, html, date):
         # Store information gathered in a dictionary
-        hotels_data = {'name': [], 'location': [], 'date_from': [], 'date_to': [],
+        hotels_data = {'name': [], 'location': [], 'date_from': [], 'date_to': [], 'url': [],
                        'hotel_price': [], 'rating': [], 'reviews': [], 'hotel_link': []}
 
         # Using BeautifulSoup to extract all hotel cards
@@ -203,6 +203,7 @@ class Booker:
                 hotels_data['location'].append(location)
                 hotels_data['date_from'].append(date[0])
                 hotels_data['date_to'].append(date[1])
+                hotels_data['url'].append(url)
                 hotels_data['hotel_link'].append(link)
                 hotels_data['hotel_price'].append(price)
                 hotels_data['rating'].append(rating)
@@ -502,7 +503,7 @@ class Booker:
                 tasks = [self.fetch(session, url) for url in batch_urls]
                 html_pages = await asyncio.gather(*tasks)
         
-                tasks = [self.extract_hotels_from_page(html, date) for html, date in zip(html_pages, batch_dates)]
+                tasks = [self.extract_hotels_from_page(url, html, date) for url, html, date in zip(batch_urls, html_pages, batch_dates)]
                 batch_results = await asyncio.gather(*tasks)
                 hotels_list.extend(batch_results)
     
