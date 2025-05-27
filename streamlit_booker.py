@@ -245,7 +245,9 @@ if st.button("Search", type="primary"):
                                     "checkin={0}&checkout={1}".format(checkin_str, checkout_str)
                                     )
                             holiday_result['approx_price'] = avg_price
-                            # print(holiday_result['hotel_link'])
+                            print(checkout_orig)
+                            print(checkout_str)
+                            print('\n')
                             final_results.append(holiday_result)
                     
             final_result_df = pd.concat(final_results)
