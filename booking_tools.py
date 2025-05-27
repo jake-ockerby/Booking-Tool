@@ -37,7 +37,7 @@ API_KEY = "1ecc066a30605371c68cb8f985a830c4"
 # proxies = {
 #   "https": "scraperapi.country_code=uk:1ecc066a30605371c68cb8f985a830c4@proxy-server.scraperapi.com:8001"
 # }
-semaphore = asyncio.Semaphore(180)
+semaphore = asyncio.Semaphore(90)
 
 class Booker:
     def __init__(self, location, from_, to_, adults, children, rooms, sort, holiday_length, airport_from=None,
@@ -490,7 +490,7 @@ class Booker:
         hotels_list = []
         
         # Using aiohttp wih a session vastly improves execution time
-        connector = aiohttp.TCPConnector(limit=180)
+        connector = aiohttp.TCPConnector(limit=90)
         async with aiohttp.ClientSession(headers=HEADERS, connector=connector) as session:
             # Call the function that builds the hotel webpage URLs and extract information
             urls, dates = await self.build_url()
