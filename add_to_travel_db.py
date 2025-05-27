@@ -37,6 +37,7 @@ for city in [cities_list[4]]:
     if 'Athens' in city:
         athenian_spirit = hotels_df[hotels_df['name'] == 'Athenian Spirit']
         helpme = athenian_spirit[['total_price', 'url']].copy().head(25)
+        print(helpme['url'].values[0])
         helpme.to_csv('helpme.csv')
         print(helpme)
         
