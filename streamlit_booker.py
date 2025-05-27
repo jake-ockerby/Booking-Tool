@@ -27,10 +27,10 @@ def convert_df(df):
 cities = pd.read_csv('citynames.csv')
 cities_tuple = tuple(cities['Full Name'])
 
-st.set_page_config(page_title="Hotels & Flights Search Tool", layout="centered")
+st.set_page_config(page_title="Cheeky Booker", layout="centered")
 
-st.title("Hotels & Flights Search Tool")
-st.markdown("Use this tool to search for the best hotels and flights within a given period.")
+st.title("Cheeky Booker")
+st.markdown("Use this tool to search for the best hotels within a given period.")
 
 # ------------ Instructions -------------
 with st.expander("Instructions"):
@@ -38,15 +38,15 @@ with st.expander("Instructions"):
     
     st.markdown("## IMPORTANT")
     st.write("""
-    - This tool is not meant to be used as a simple search for hotels and flights between two
-    exact dates, but rather as a search for the best hotels and flights in a given window.
+    - This tool is not meant to be used as a simple search for hotels between two
+    exact dates, but rather as a search for the best hotels in a given window.
     
     - **Example**: You are travelling to Madrid for a week but don't know the best dates to go over the summer.
     In the Travel Window section, you enter from 1st July to 31st August and hit search. The tool
     will then search from 1st - 8th July, 2nd - 9th July, 3rd - 10th July, ... all the way up until the 31st
     August. The long list of results can then be downloaded to excel.
     
-    - Some filters (like review scores or stars) may limit available results.
+    - Some filters (such as Price Range) may limit available results.
     - Price & Rating will sort using the VM (Value for Money) Score. Here, the best possible score is 100
       and the worst possible score is 0.
     """)
@@ -74,19 +74,16 @@ with st.expander("Instructions"):
     st.write("""
     Expand the 'Additional Filters' section to refine your search:
     - **Price Range**: Minimum and maximum nightly hotel price
-    - **Minimum Review Rating**: (6–9)
+    - **Rating**: Choose hotels rated between 6 & 10
+    - **Reviews**: Choose hotels that have over a certain number of reviews
     - **Sort Results**: By Price, Rating, or Price & Rating
     """)
 
     st.markdown("### 5. Search")
     st.write("""
     - Click the **Search** button.
-    - The app will either:
-        - Search **hotels & flights** if hotel & flight locations are entered.
-        - Search **hotels only** if only a hotel location is entered.
-        - Search **flights only** if both departure and arrival airports are entered,
-        but no hotel location.
-        - Show a **warning** if neither is provided.
+    - The app will search for hotels over the selected window and holiday duration.
+    - If no location is provided, a warning will be shown.
     """)
 
     st.markdown("### 6. View and Download Results")
@@ -133,7 +130,14 @@ with st.expander("Click to add filters"):
         max_price = st.number_input("Max. Price:", value=5000, min_value=min_price, max_value=5000)
 
     st.markdown("#### Rating")
-    review_score = st.number_input("Min. Review Rating:", min_value=6, max_value=9)
+    col11, col12 = st.columns(2)
+    with col11:
+        min_review_score = st.number_input("Min. Rating:", min_value=6, max_value=9.9)
+    with col12:
+        max_review_score = st.number_input("Max. Rating:", value=9.9, min_value=min_review_score, max_value=9.9)
+        
+    st.markdown("#### Reviews")
+    min_reviews = st.number_input("Min. # of reviews:", min_value=0, max_value=100000)
 
     st.markdown("#### Sort Options")
     sort = st.selectbox("Sort By:", ("Price", "Rating", "Price & Rating"))
@@ -159,7 +163,9 @@ if st.button("Search", type="primary"):
                         AND checkin_date >= '{from_}'
                         AND checkin_date <= '{to_}'
                         AND approx_price BETWEEN {min_price} AND {max_price}
-                        AND rating >= {review_score}
+                        AND rating >= {min_review_score}
+                        AND rating <= {max_review_score}
+                        AND reviews >= {min_reviews}
                         
                         ORDER BY name, checkin_date
                         """
@@ -202,11 +208,6 @@ if st.button("Search", type="primary"):
                             weekly_df = pd.concat(weekly_results)
 
                             avg_price = round(sum(weekly_df['approx_price']), 2)
-                            if name == 'Athenian Spirit':
-                                print(name)
-                                print(hotel_df[['checkin_date', 'checkout_date', 'approx_price']])
-                                print(weekly_df)
-                                print(avg_price)
                             holiday_result = weekly_df.iloc[[0]].copy()
                             
                             checkin_orig = holiday_result['checkin_date'].values[0].strftime("%Y-%m-%d")
