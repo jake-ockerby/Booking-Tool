@@ -140,17 +140,19 @@ holiday_length = st.slider("Holiday Duration (Days):", 1, min((to_ - from_).days
 # ----------- Advanced Filters ------------
 st.markdown("### Additional Filters")
 with st.expander("Click to add filters"):
-    st.markdown("#### Price Range (£ per night)")
+    st.markdown("#### Price Range (£ per person per night)")
     col9, col10 = st.columns(2)
     with col9:
         min_price = st.number_input("Min. Price:", min_value=0, max_value=4999)
     with col10:
         max_price = st.number_input("Max. Price:", value=5000, min_value=min_price, max_value=5000)
 
+    st.markdown("#### Rating")
+    review_score = st.number_input("Min. Review Rating:", min_value=6, max_value=9)
+
     st.markdown("#### Sort Options")
     sort = st.selectbox("Sort By:", ("Price", "Rating", "Price & Rating"))
 
-    review_score = st.number_input("Min. Review Rating:", min_value=6, max_value=9)
 
 st.divider()
 
@@ -233,6 +235,7 @@ if st.button("Search", type="primary"):
                             
                             checkin_orig = holiday_result['checkin_date'].values[0].strftime("%Y-%m-%d")
                             checkout_orig = holiday_result['checkout_date'].values[0].strftime("%Y-%m-%d")
+                            print(checkin_orig)
                             checkin_str = checkin.strftime("%Y-%m-%d")
                             checkout_str = checkout.strftime("%Y-%m-%d")
                             
