@@ -158,6 +158,7 @@ class Booker:
                     "group_children": self.children,
                     "no_rooms": self.rooms,
                     "order": order_map[self.sort][map_],
+                    "selected_currency": "GBP",
                     "nflt": f"ht_id=204;review_score={self.review_score}" + mealplan_str + twin_str + stars_str + distance_str + pricerange_str
                 }
                 url = f"{base_url}?{urlencode(query)}"
