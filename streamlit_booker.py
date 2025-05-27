@@ -132,7 +132,7 @@ with st.expander("Click to add filters"):
     st.markdown("#### Rating")
     col11, col12 = st.columns(2)
     with col11:
-        min_review_score = st.number_input("Min. Rating:", min_value=6, max_value=9.9)
+        min_review_score = st.number_input("Min. Rating:", min_value=6.0, max_value=9.9)
     with col12:
         max_review_score = st.number_input("Max. Rating:", value=9.9, min_value=min_review_score, max_value=9.9)
         
