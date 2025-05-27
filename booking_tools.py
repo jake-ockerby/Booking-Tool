@@ -195,9 +195,9 @@ class Booker:
                 rating = float(hotel.split('Scored')[1][:4].strip())
                 review = int(re.sub(r'[^0-9]', '', hotel.split('reviews')[0][-8:]))
                 try:
-                    price = int(re.sub(r'[^0-9]', '', hotel.split('Price')[1][:8]))
+                    price = int(re.sub(r'[^0-9]', '', hotel.split('Price')[1].split('1 week')[0][:8]))
                 except:
-                    price = int(re.sub(r'[^0-9]', '', hotel.split('Current price')[1][:8]))
+                    price = int(re.sub(r'[^0-9]', '', hotel.split('Current price')[1].split('1 week')[0][:8]))
 
                 # Add to dictionary
                 hotels_data['name'].append(name)
