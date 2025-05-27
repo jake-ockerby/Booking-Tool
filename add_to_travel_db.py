@@ -24,7 +24,7 @@ cursor = conn.cursor()
 
 today = date.today().strftime("%Y-%m-%d")
 end_date = (date.today() + timedelta(days=212)).strftime("%Y-%m-%d")
-for city in list(cities_list[4]):
+for city in [cities_list[4]]:
     start_time = time.time()
     print(city)
     booker = Booker(location=city, from_=today, to_=end_date, adults=2, children=0,
