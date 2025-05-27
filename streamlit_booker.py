@@ -172,8 +172,6 @@ if st.button("Search", type="primary"):
             final_results = []
             for name in hotel_names:
                 hotel_df = result_df[result_df['name'] == name].copy()
-                print(name)
-                print(hotel_df['approx_price'].head(1))
                 first_day = list(hotel_df['checkin_date'])[0]
                 last_day = list(hotel_df['checkin_date'])[-1]
                 window = (last_day - first_day).days - holiday_length + 1
@@ -205,6 +203,8 @@ if st.button("Search", type="primary"):
 
                             avg_price = round(sum(weekly_df['approx_price']), 2)
                             if name == 'Athenian Spirit':
+                                print(name)
+                                print(hotel_df[['checkin_date', 'checkout_date', 'approx_price']])
                                 print(weekly_df)
                                 print(avg_price)
                             holiday_result = weekly_df.iloc[[0]].copy()
