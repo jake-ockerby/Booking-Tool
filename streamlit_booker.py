@@ -204,6 +204,9 @@ if st.button("Search", type="primary"):
                             weekly_df = pd.concat(weekly_results)
 
                             avg_price = round(sum(weekly_df['approx_price']), 2)
+                            if name == 'Athenian Spirit':
+                                print(weekly_df)
+                                print(avg_price)
                             holiday_result = weekly_df.iloc[[0]].copy()
                             
                             checkin_orig = holiday_result['checkin_date'].values[0].strftime("%Y-%m-%d")
