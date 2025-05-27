@@ -235,7 +235,6 @@ if st.button("Search", type="primary"):
                             
                             checkin_orig = holiday_result['checkin_date'].values[0].strftime("%Y-%m-%d")
                             checkout_orig = holiday_result['checkout_date'].values[0].strftime("%Y-%m-%d")
-                            print(checkin_orig)
                             checkin_str = checkin.strftime("%Y-%m-%d")
                             checkout_str = checkout.strftime("%Y-%m-%d")
                             
@@ -246,6 +245,7 @@ if st.button("Search", type="primary"):
                                     "checkin={0}&checkout={1}".format(checkin_str, checkout_str)
                                     )
                             holiday_result['approx_price'] = avg_price
+                            print(holiday_result['hotel_link'])
                             final_results.append(holiday_result)
                     
             final_result_df = pd.concat(final_results)
