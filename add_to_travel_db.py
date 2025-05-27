@@ -21,10 +21,12 @@ cursor = conn.cursor()
 
 today = date.today().strftime("%Y-%m-%d")
 end_date = (date.today() + timedelta(days=212)).strftime("%Y-%m-%d")
-for city in cities_list[:14]:
+for city in cities_list[:5]:
+    start_time = time.time()
     print(city)
     booker = Booker(location=city, from_=today, to_=end_date, adults=2, children=0,
                     rooms=1, sort='Price & Rating', holiday_length=7)
+    
     
     hotels_df = asyncio.run(booker.booking_search())
     hotels_df['city'] = city
@@ -32,8 +34,11 @@ for city in cities_list[:14]:
     hotels_df['total_price'] = hotels_df['total_price']/14
     hotels_df = hotels_df.rename(columns={'total_price': 'approx_price'})
     hotels_df.to_sql(name='hotels', con=conn, if_exists='replace')
+    end_time = time.time()
+    print('Execution Time: '+ str(round(end_time - start_time)) + 's\n')
 
-# df = pd.read_sql("SELECT * FROM hotels", conn)
+
+#df = pd.read_sql("SELECT * FROM hotels", conn)
 conn.commit()
 cursor.close()
 conn.close()
