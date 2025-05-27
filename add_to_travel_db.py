@@ -36,7 +36,9 @@ for city in [cities_list[4]]:
     hotels_df = hotels_df.set_index('city')
     if 'Athens' in city:
         athenian_spirit = hotels_df[hotels_df['name'] == 'Athenian Spirit']
-        print(athenian_spirit[['total_price', 'url']].head(25))
+        helpme = athenian_spirit[['total_price', 'url']].copy().head(25)
+        helpme.to_csv('helpme.csv')
+        print(helpme)
         
     hotels_df['total_price'] = hotels_df['total_price']/14
     hotels_df = hotels_df.rename(columns={'total_price': 'approx_price'})
