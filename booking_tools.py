@@ -174,7 +174,7 @@ class Booker:
     async def extract_hotels_from_page(self, url, html, date):
         # Store information gathered in a dictionary
         hotels_data = {'name': [], 'location': [], 'date_from': [], 'date_to': [], 'url': [],
-                       'hotel_price': [], 'rating': [], 'reviews': [], 'hotel_link': []}
+                       'hotel_price': [], 'rating': [], 'reviews': [], 'hotel_link': [], 'text': []}
 
         # Using BeautifulSoup to extract all hotel cards
         page = BeautifulSoup(html, 'lxml') 
@@ -208,6 +208,7 @@ class Booker:
                 hotels_data['hotel_price'].append(price)
                 hotels_data['rating'].append(rating)
                 hotels_data['reviews'].append(review)
+                hotels_data['text'].append(hotel)
             except:
                 continue
 
