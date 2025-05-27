@@ -181,15 +181,12 @@ if st.button("Search", type="primary"):
             result_df = pd.read_sql(query, con=conn)
             result_df['checkin_date'] = pd.to_datetime(result_df['checkin_date']).dt.date
             result_df['checkout_date'] = pd.to_datetime(result_df['checkout_date']).dt.date
-            # print(result_df)
             conn.close()
             
             hotel_names = list(result_df['name'].unique())
             final_results = []
             for name in hotel_names:
-                print(name)
                 hotel_df = result_df[result_df['name'] == name].copy()
-                # print(hotel_df[['checkin_date', 'checkout_date']])
                 first_day = list(hotel_df['checkin_date'])[0]
                 last_day = list(hotel_df['checkin_date'])[-1]
                 window = (last_day - first_day).days - holiday_length + 1
@@ -197,22 +194,12 @@ if st.button("Search", type="primary"):
                     for i in range(window):
                         checkin = first_day + timedelta(days=i)
                         checkout = checkin + timedelta(days=holiday_length)
-                        # # Convert back to string
-                        # checkin = checkin_date.strftime("%Y-%m-%d")
-                        # checkout = checkout_date.strftime("%Y-%m-%d")
-                        
                         holiday = hotel_df[(hotel_df['checkin_date'] >= checkin) & (hotel_df['checkin_date'] <= checkout)].copy()
-                        # print(holiday[['checkin_date', 'checkout_date']])
                         weeks = int(holiday_length/7) + 1
                         weekly_results = []
                         for j in range(weeks):
                             week_end = checkin + timedelta(days=(j+1)*7)
                             week_result = holiday[holiday['checkout_date'] == week_end].copy()
-                            # if name == 'Eleven Didsbury Park Hotel':
-                            # print(hotel_df[['checkin_date', 'checkout_date']])
-                            # print(week_end)
-                            # print(len(week_result))
-                            # print('\n')
                             if week_end > checkout:
                                 days_over = (week_end - checkout).days
                                 week_result['approx_price'] = week_result['approx_price']*((7-days_over)/holiday_length)
@@ -227,9 +214,7 @@ if st.button("Search", type="primary"):
                             
                         if 0 not in check_missing[:-1]:
                             weekly_df = pd.concat(weekly_results)
-                            # if (i == 0) & (name == 'Airport Hotel Manchester'):
-                                # print(weekly_df)
-                        
+
                             avg_price = round(sum(weekly_df['approx_price']), 2)
                             holiday_result = weekly_df.iloc[[0]].copy()
                             
@@ -245,10 +230,6 @@ if st.button("Search", type="primary"):
                                     "checkin={0}&checkout={1}".format(checkin_str, checkout_str)
                                     ))
                             holiday_result['approx_price'] = avg_price
-                            print(repr(holiday_result['hotel_link'].values[0]))
-                            print(checkin_orig)
-                            print(checkout_orig)
-                            print('\n')
                             final_results.append(holiday_result)
                     
             final_result_df = pd.concat(final_results)
