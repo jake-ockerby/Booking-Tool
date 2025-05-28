@@ -132,9 +132,8 @@ with st.expander("Instructions"):
 
 st.divider()
 
-# ----------- Location & Airports ------------
-st.markdown("### Location & Airports")
-# location = st.text_input("Hotel Location:", None)
+# ----------- Location ------------
+st.markdown("### Location")
 location = st.selectbox("Hotel Location:", cities_tuple, index=None)
 
 st.divider()
