@@ -7,7 +7,6 @@ from datetime import date, timedelta
 import sqlite3
 import io
 import requests
-import os
 today = date.today()
 
 # Get Database
@@ -35,6 +34,7 @@ def get_connection():
 
 
 # Cache to prevent computation on every rerun
+# Write results to excel file
 @st.cache_data
 def convert_df(df):
     output = io.BytesIO()
@@ -50,12 +50,13 @@ def convert_df(df):
     data_bytes = output.getvalue()
     return data_bytes
 
+# Read in cities and remove any that are not desired
 cities = pd.read_csv('citynames.csv')
 cities_list = sorted(list(cities['Full Name']))
 exclude = ['Andorra', 'San Marino', 'Monaco', 'Jersey', 'Guernsey', 'Isle of Man',
            'Liechtenstein', 'Sector 3', 'Syria', 'Luxembourg', 'Cyprus']
 for item in exclude:
-    cities_list = [city for city in cities_list if item not in city ]
+    cities_list = [city for city in cities_list if item not in city]
     
 cities_tuple = tuple(cities_list)
 
@@ -182,13 +183,8 @@ if st.button("Search", type="primary"):
     # If hotel location is non-empty, run the full booking search
     if location:
         with st.spinner("Bear with me ...", show_time=True):
-            # try:
+            # Connect to database and store raw results in a dataframe
             conn = get_connection()
-            # print(f"Opened SQLite database with version {sqlite3.sqlite_version} successfully.")
-
-            # except:
-            #     st.write("Failed to open database")
-                
             query = f"""SELECT *
                         FROM hotels
                         WHERE city = '{location}'
@@ -204,20 +200,30 @@ if st.button("Search", type="primary"):
             result_df = pd.read_sql(query, con=conn)
             result_df['checkin_date'] = pd.to_datetime(result_df['checkin_date']).dt.date
             result_df['checkout_date'] = pd.to_datetime(result_df['checkout_date']).dt.date
-            # conn.close()
             
+            # Raw results are 7 days at a time - eg. 18th - 25th March, 19th - 26th March, etc.
+            # We want results for any holiday length the user enters on the app. This loop cycles
+            # over each hotel name and calculates an approx. price.
             hotel_names = list(result_df['name'].unique())
             final_results = []
             for name in hotel_names:
+                # Create a window from first and last dates the hotel appears
                 hotel_df = result_df[result_df['name'] == name].copy()
                 first_day = list(hotel_df['checkin_date'])[0]
                 last_day = list(hotel_df['checkin_date'])[-1]
                 window = (last_day - first_day).days - holiday_length + 1
+                # If window is < 1, the holiday length is larger than the dates the hotel is
+                # available for. We need to skip over these.
                 if window >= 1:
                     for i in range(window):
+                        # Cycle over the window
                         checkin = first_day + timedelta(days=i)
                         checkout = checkin + timedelta(days=holiday_length)
                         holiday = hotel_df[(hotel_df['checkin_date'] >= checkin) & (hotel_df['checkin_date'] <= checkout)].copy()
+                        
+                        # If holiday length is < 1 week, use this week's price as the approx. price.
+                        # Otherwise we want to collect prices at each week end, and adjust the price
+                        # calculation for any remainder.
                         weeks = int(holiday_length/7) + 1
                         weekly_results = []
                         for j in range(weeks):
@@ -232,14 +238,19 @@ if st.button("Search", type="primary"):
                                 
                             weekly_results.append(week_result)
                        
+                        # Workaround for if we only have 1 result (< 1 week), as we skip over any week-ends
+                        # that are missing (leads to inconsitent results)
                         check_missing = [len(x) for x in weekly_results]
                         if len(check_missing) == 1:
                             check_missing.append(0)
-                            
+                        
+                        # If there are no missings, sum over the collected prices (works as an average due to scaling)
                         if 0 not in check_missing[:-1]:
                             weekly_df = pd.concat(weekly_results)
-
                             avg_price = round(sum(weekly_df['approx_price']), 2)
+                            
+                            # Everything else being constant, we are ok to take the first row, add in our calculated
+                            # price, and change the date information
                             holiday_result = weekly_df.iloc[[0]].copy()
                             
                             checkin_orig = holiday_result['checkin_date'].values[0].strftime("%Y-%m-%d")
@@ -254,16 +265,24 @@ if st.button("Search", type="primary"):
                                     "checkin={0}&checkout={1}".format(checkin_str, checkout_str)
                                     ))
                             holiday_result['approx_price'] = avg_price
+                            
+                            # Add the results of each hotel to the list
                             final_results.append(holiday_result)
-                    
+            
+            # Build the final dataframe from the list of all results
             final_result_df = pd.concat(final_results)
             
+            
+            # ---------------------------------------------- VM Calculation --------------------------------------------
             # Scale columns to be within a range of 0 and 1 - price is represented as the percentile value over all prices
             final_result_df['price_percentile'] = stats.percentileofscore(final_result_df['approx_price'], final_result_df['approx_price'])*0.01
             final_result_df['rating_scaled'] = final_result_df['rating']*0.1
             
             # Build VM (Value for Money) score
             final_result_df['vm_score_unrounded'] = 100*(((1-final_result_df['price_percentile'])+final_result_df['rating_scaled'])/2)
+            # ----------------------------------------------------------------------------------------------------------
+            
+            
             
             # Sort final results based on user input
             if sort == 'Price & Rating':
@@ -275,11 +294,9 @@ if st.button("Search", type="primary"):
             else:
                 final_result_df = final_result_df.sort_values(by='rating', ascending=False)
         
-            # Apply rounding to VM score
+            # Apply rounding to VM score and drop scaled columns
             final_result_df['vm_score'] = round(final_result_df['vm_score_unrounded'])
             final_result_df['vm_score'] = final_result_df['vm_score'].astype(int)
-        
-            # Drop scaled columns
             final_result_df.drop('price_percentile', axis=1, inplace=True)
             final_result_df.drop('rating_scaled', axis=1, inplace=True)
             final_result_df.drop('vm_score_unrounded', axis=1, inplace=True)
@@ -287,11 +304,14 @@ if st.button("Search", type="primary"):
                     
         st.success("Search complete!")
 
+        # Configure link column to allow hyperlinks
         column_config = {
         "hotel_link": st.column_config.LinkColumn("hotel_link", display_text="Hotel Link")
         }
+        # Show the dataframe in the app
         st.dataframe(final_result_df, column_config=column_config, hide_index=True)
 
+        # Convert to excel and show the download button
         excel = convert_df(final_result_df)
         st.download_button("Download Results", data=excel, file_name="search_results.xlsx", type="primary")
 
