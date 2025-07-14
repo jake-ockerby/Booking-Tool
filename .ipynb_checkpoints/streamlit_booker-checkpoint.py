@@ -10,7 +10,7 @@ import requests
 today = date.today()
 
 # Get Database
-DB_URL = "https://github.com/jake-ockerby/Booking-Tool/releases/download/v1.0.1/travel.db"
+DB_URL = "https://github.com/jake-ockerby/Booking-Tool/releases/download/v1.0.0/travel.db"
 DB_PATH = "travel.db"
 
 @st.cache_resource
